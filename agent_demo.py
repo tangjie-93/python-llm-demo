@@ -3,6 +3,12 @@
 DeepSeek Agent Demo
 基于 ReAct 模式的智能体实现，支持工具调用和记忆管理
 使用 Gradio 作为 UI 框架
+
+ReAct 框架说明：
+- Reasoning (思考): 大模型分析用户需求，决定是否需要使用工具
+- Acting (行动): 如果需要工具，输出工具名称和参数
+- Observation (观察): 执行工具，获取结果
+- 最终回答: 基于观察结果，大模型生成最终回复
 """
 
 import gradio as gr
@@ -44,7 +50,13 @@ class Tool:
 class Agent:
     """
     DeepSeek Agent 实现
-    基于 ReAct 模式（Reasoning + Acting）
+    基于 ReAct 模式（Reasoning + Acting + Observation）
+    
+    ReAct 完整流程：
+    1. Reasoning: 大模型分析用户需求，输出思考过程
+    2. Acting: 如果需要工具，输出 "行动: 工具名" 和 "参数: {...}"
+    3. Observation: 系统执行工具，获取结果
+    4. 最终回答: 大模型基于观察结果生成最终回复（第2次大模型调用）
     """
     
     def __init__(self):
@@ -226,7 +238,15 @@ class Agent:
         return tools_desc
     
     def parse_action(self, text: str) -> tuple:
-        """解析 Agent 的行动"""
+        """
+        解析 Agent 的行动（ReAct 中的 Acting 阶段）
+        
+        解析大模型输出的思考、行动和参数
+        格式示例：
+            思考: 用户想查询天气，我需要使用 weather 工具
+            行动: weather
+            参数: {"city": "北京"}
+        """
         lines = text.strip().split('\n')
         thought = ""
         action = None
@@ -247,16 +267,44 @@ class Agent:
     
     def run_stream(self, user_input: str, system_prompt: str = ""):
         """
-        运行 Agent（流式返回，带工具调用 loading 效果）
+        运行 Agent（流式返回，完整的 ReAct 流程）
+        
+        ReAct 完整流程：
+        ┌─────────────────────────────────────────────────────────────┐
+        │  Step 1: Reasoning (思考)                                    │
+        │  调用大模型分析用户需求，输出思考过程                          │
+        │  → 输出: "思考: 用户想查询天气，我需要使用 weather 工具"       │
+        └─────────────────────────────────────────────────────────────┘
+                                ↓
+        ┌─────────────────────────────────────────────────────────────┐
+        │  Step 2: Acting (行动)                                       │
+        │  解析大模型输出，识别工具调用请求                              │
+        │  → 识别: "行动: weather" + "参数: {"city": "北京"}"            │
+        └─────────────────────────────────────────────────────────────┘
+                                ↓
+        ┌─────────────────────────────────────────────────────────────┐
+        │  Step 3: Observation (观察)                                  │
+        │  执行工具，获取结果                                           │
+        │  → 执行: _weather("北京") → 返回天气数据                       │
+        └─────────────────────────────────────────────────────────────┘
+                                ↓
+        ┌─────────────────────────────────────────────────────────────┐
+        │  Step 4: 最终回答 (第2次大模型调用)                           │
+        │  将观察结果传给大模型，生成最终回复                            │
+        │  → 输入: 用户问题 + 工具结果                                   │
+        │  → 输出: "北京今天天气晴朗，温度25°C..."                       │
+        └─────────────────────────────────────────────────────────────┘
         
         Args:
             user_input: 用户输入
             system_prompt: 系统提示词
         
         Yields:
-            流式返回的回复片段
+            流式返回的回复片段，包含完整的 ReAct 流程
         """
-        # 构建系统提示词
+        # =====================================================================
+        # Step 0: 准备阶段 - 构建系统提示词和消息列表
+        # =====================================================================
         full_system_prompt = system_prompt or textwrap.dedent("""\
             你是一个智能助手，可以使用工具来帮助用户解决问题。
             请按照 ReAct 模式（思考-行动-观察）来工作。
@@ -268,27 +316,30 @@ class Agent:
             重要提示：
             1. 优先使用内置工具解决问题
             2. 每个工具都有固定的参数要求，请严格按照工具描述使用参数
-            3. 如果工具调用失败，系统会显示错误信息，请直接告诉用户错误原因，不要再次尝试调用工具
-            4. 如果问题不需要使用内置工具，直接回答用户即可（你本身具备联网能力）
+            3. 如果工具调用失败，系统会显示错误信息，请直接告诉用户错误原因
+            4. 如果问题不需要使用内置工具，直接回答用户即可
         """)
         
-        # 添加工具描述
+        # 添加工具描述到系统提示词
         full_system_prompt += "\n\n" + self.get_tools_description()
-        print(f"系统提示词: {full_system_prompt}")
         
-        # 构建消息列表
+        # 构建消息列表（包含系统提示词和历史记忆）
         messages = [{"role": "system", "content": full_system_prompt}]
         
-        # 添加记忆（限制长度）
+        # 添加记忆（限制长度，避免超出上下文限制）
         recent_memory = self.memory[-self.max_memory:] if len(self.memory) > self.max_memory else self.memory
         for msg in recent_memory:
             messages.append({"role": msg["role"], "content": msg["content"]})
         
-        # 添加用户输入
+        # 添加当前用户输入
         messages.append({"role": "user", "content": user_input})
         
-        # 调用 DeepSeek API（流式，不启用 webSearch）
+        # =====================================================================
+        # Step 1: Reasoning (思考阶段)
+        # 调用大模型分析用户需求，输出思考过程
+        # =====================================================================
         try:
+            # 第 1 次调用大模型：分析需求，决定是否使用工具
             response = client.chat.completions.create(
                 model="deepseek-chat",
                 messages=messages,
@@ -297,44 +348,110 @@ class Agent:
                 stream=True
             )
             
-            # 收集完整回复
+            # 收集大模型的思考和行动计划
             assistant_reply = ""
             for chunk in response:
                 if chunk.choices[0].delta.content:
                     content = chunk.choices[0].delta.content
                     assistant_reply += content
+                    # 流式输出大模型的思考过程
                     yield assistant_reply
             
-            # 解析是否需要调用工具（thought 为思考过程，当前未使用）
-            _, action, params = self.parse_action(assistant_reply)
+            # =====================================================================
+            # Step 2: Acting (行动阶段)
+            # 解析大模型输出，判断是否需要调用工具
+            # =====================================================================
+            thought, action, params = self.parse_action(assistant_reply)
             
+            # 如果需要调用工具
             if action and action in self.tools:
                 # 显示工具调用 loading 效果
                 loading_message = f"\n\n🔄 正在调用工具 `{action}`，请稍候...\n"
                 yield assistant_reply + loading_message
                 
                 try:
-                    # 执行工具
+                    # =====================================================================
+                    # Step 3: Observation (观察阶段)
+                    # 执行工具，获取结果
+                    # =====================================================================
                     tool_result = self.tools[action].execute(**params)
                     
-                    # 构建观察结果（替换 loading 消息）
-                    observation = f"\n\n✅ 工具调用完成！\n\n**观察结果：**\n\n{tool_result}\n\n"
-                    yield assistant_reply + observation
+                    # 显示工具执行结果
+                    observation_display = f"\n\n---\n\n"
+                    observation_display += f"**🛠️ 工具执行结果（Observation）**\n\n"
+                    observation_display += f"{tool_result}\n\n"
+                    observation_display += f"---\n"
+                    yield assistant_reply + observation_display
                     
-                    # 更新记忆
+                    # =====================================================================
+                    # Step 4: 最终回答（第2次大模型调用）
+                    # 基于观察结果，让大模型生成最终回复
+                    # =====================================================================
+                    # 构建第2次调用的消息列表
+                    # 包含：系统提示词 + 历史记忆 + 用户问题 + 第1次回复 + 工具结果
+                    final_messages = [
+                        {"role": "system", "content": full_system_prompt}
+                    ]
+                    
+                    # 添加历史记忆
+                    for msg in recent_memory:
+                        final_messages.append({"role": msg["role"], "content": msg["content"]})
+                    
+                    # 添加用户问题
+                    final_messages.append({"role": "user", "content": user_input})
+                    
+                    # 添加第1次大模型的回复（作为 assistant 的消息）
+                    final_messages.append({"role": "assistant", "content": assistant_reply})
+                    
+                    # 添加工具执行结果（作为 tool 角色的消息）
+                    # 注意：这里使用 user 角色来传递观察结果，因为 DeepSeek 不支持 tool 角色
+                    final_messages.append({
+                        "role": "user", 
+                        "content": f"工具执行结果：\n{tool_result}\n\n请基于以上结果回答用户的问题。"
+                    })
+                    
+                    # 显示第2次大模型调用的提示
+                    final_thinking = f"\n🤔 正在基于观察结果生成最终回答...\n"
+                    yield assistant_reply + observation_display + final_thinking
+                    
+                    # 第 2 次调用大模型：基于观察结果生成最终回复
+                    final_response = client.chat.completions.create(
+                        model="deepseek-chat",
+                        messages=final_messages,
+                        temperature=0.7,
+                        max_tokens=2000,
+                        stream=True
+                    )
+                    
+                    # 收集最终回复
+                    final_reply = ""
+                    for chunk in final_response:
+                        if chunk.choices[0].delta.content:
+                            content = chunk.choices[0].delta.content
+                            final_reply += content
+                            # 流式输出最终回复
+                            yield assistant_reply + observation_display + final_thinking + final_reply
+                    
+                    # 构建完整的回复（包含 ReAct 全流程）
+                    full_reply = assistant_reply + observation_display + final_thinking + final_reply
+                    
+                    # 更新记忆（保存完整的对话）
                     self.memory.append({"role": "user", "content": user_input})
-                    self.memory.append({"role": "assistant", "content": assistant_reply + observation})
+                    self.memory.append({"role": "assistant", "content": full_reply})
                     
                 except Exception as tool_error:
                     # 工具执行失败，显示错误信息
-                    error_message = f"\n\n❌ 工具调用失败：{str(tool_error)}\n\n"
+                    error_message = f"\n\n---\n\n"
+                    error_message += f"**❌ 工具调用失败**\n\n"
+                    error_message += f"{str(tool_error)}\n\n"
+                    error_message += f"---\n"
                     yield assistant_reply + error_message
                     
                     # 更新记忆
                     self.memory.append({"role": "user", "content": user_input})
                     self.memory.append({"role": "assistant", "content": assistant_reply + error_message})
             else:
-                # 未命中工具，直接使用第 1 次调用的回复
+                # 不需要调用工具，直接使用第1次大模型的回复
                 # 更新记忆
                 self.memory.append({"role": "user", "content": user_input})
                 self.memory.append({"role": "assistant", "content": assistant_reply})
@@ -406,7 +523,7 @@ def clear_chat():
 # 创建 Gradio 界面
 with gr.Blocks(title="DeepSeek Agent Demo") as demo:
     gr.Markdown("# 🤖 DeepSeek Agent 智能体演示")
-    gr.Markdown("基于 ReAct 模式的智能体，支持工具调用（计算器、天气查询、时间、搜索）")
+    gr.Markdown("基于完整 ReAct 模式的智能体，支持工具调用（计算器、天气查询、时间、搜索）")
     
     with gr.Row():
         # 左侧：对话区域
@@ -444,6 +561,27 @@ with gr.Blocks(title="DeepSeek Agent Demo") as demo:
             - **weather**: 天气查询
             - **time**: 当前时间
             - **search**: 网页搜索（Tavily API，每月1000次免费）
+            """)
+            
+            gr.Markdown("### 🧠 ReAct 框架说明")
+            gr.Markdown("""
+            **完整 ReAct 流程：**
+            
+            1. **🤔 Reasoning（思考）**
+               - 大模型分析需求
+               - 决定是否使用工具
+            
+            2. **🔄 Acting（行动）**
+               - 识别工具调用
+               - 执行工具函数
+            
+            3. **👁️ Observation（观察）**
+               - 获取工具结果
+               - 整理观察数据
+            
+            4. **💬 最终回答**
+               - 第2次大模型调用
+               - 基于观察生成回复
             """)
             
             gr.Markdown("### 💡 示例")
