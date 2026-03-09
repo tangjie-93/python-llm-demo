@@ -2,7 +2,10 @@
 
 ```bash
 python -m venv venv
+// 激活虚拟环境 linux/mac
 source venv/bin/activate
+// 激活虚拟环境 windows
+. venv\Scripts\activate 
 ```
 
 ---
@@ -64,7 +67,10 @@ deactivate
 python -m venv venv
 
 # 2. 激活虚拟环境
+// 激活虚拟环境 linux/mac
 source venv/bin/activate
+// 激活虚拟环境 windows
+. venv\Scripts\activate 
 
 # 3. 安装需要的包
 pip install requests

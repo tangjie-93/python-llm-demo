@@ -1,0 +1,27 @@
+# LangChain 核心依赖
+langchain
+langchain-core
+langchain-community
+
+# 模型提供者
+openai
+langchain-openai
+
+deepseek
+
+# 文档处理
+pypdf
+python-docx
+
+# 向量存储
+chromadb
+faiss-cpu
+
+# 网络请求
+requests
+
+# 前端界面
+gradio
+
+# 环境变量管理
+python-dotenv
