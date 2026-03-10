@@ -1,6 +1,6 @@
 """
-LangChain 工具示例
-不使用复杂的代理功能，只使用简单的工具调用
+`LangChain` 工具和代理示例
+包含：`Tools`、`Agents`、`Toolkits`
 """
 from langchain_core.tools import Tool
 from demos.a01_basic_concepts import get_llm
@@ -9,12 +9,12 @@ def tools_demo(model_name):
     """工具示例"""
     llm = get_llm(model_name)
     
-    # 模拟搜索工具
+    # 模拟搜索工具（`Tools` 示例）
     def search(query):
         """模拟搜索工具"""
         return f"[模拟搜索结果] 关于 '{query}' 的搜索结果"
     
-    # 自定义工具
+    # 自定义计算工具（`Tools` 示例）
     def calculate(expression):
         """计算数学表达式"""
         try:
@@ -22,6 +22,7 @@ def tools_demo(model_name):
         except:
             return "计算错误"
     
+    # 工具列表
     tools = [
         Tool(
             name="Search",
@@ -38,10 +39,10 @@ def tools_demo(model_name):
     return tools, llm
 
 def run_agent(input_text, model_name="deepseek"):
-    """运行工具示例"""
+    """运行代理示例"""
     tools, llm = tools_demo(model_name)
     
-    # 简单的路由逻辑
+    # 简单的代理逻辑（模拟 `Agents` 功能）
     if "天气" in input_text or "搜索" in input_text:
         # 使用搜索工具
         search_tool = tools[0]
@@ -54,14 +55,14 @@ def run_agent(input_text, model_name="deepseek"):
             calc_tool = tools[1]
             return calc_tool.run(expr.group())
     
-    # 默认使用 LLM
+    # 默认使用 `LLM`
     from langchain_core.prompts import ChatPromptTemplate
     prompt = ChatPromptTemplate.from_template("{input}")
     chain = prompt | llm
     return chain.invoke({"input": input_text}).content
 
 if __name__ == "__main__":
-    # 测试工具
+    # 测试搜索工具
     result = run_agent("今天北京的天气如何？")
     print("搜索结果:", result)
     

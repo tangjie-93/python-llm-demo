@@ -1,20 +1,23 @@
 """
-LangChain 示例模块
+`LangChain` 示例模块
 """
 
 # 可以在这里导出常用的函数
-from .a01_basic_concepts import get_llm
-from .a02_chains import chains_demo
-from .a03_memory import memory_demo
-from .a04_document_processing import document_processing_demo
-from .a05_tools_agents import tools_demo
-from .a06_evaluation import evaluation_demo
+from .a01_basic_concepts import get_llm, run_demo as run_basic_concepts
+from .a02_chains import run_sequential_chain, run_router_chain
+from .a03_memory import run_memory_demo
+from .a04_document_processing import run_document_retrieval, get_all_documents
+from .a05_tools_agents import run_agent
+from .a06_evaluation import run_evaluation
 
 __all__ = [
     'get_llm',
-    'chains_demo',
-    'memory_demo',
-    'document_processing_demo',
-    'tools_demo',
-    'evaluation_demo'
+    'run_basic_concepts',
+    'run_sequential_chain',
+    'run_router_chain',
+    'run_memory_demo',
+    'run_document_retrieval',
+    'get_all_documents',
+    'run_agent',
+    'run_evaluation'
 ]

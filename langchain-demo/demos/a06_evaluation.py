@@ -1,6 +1,6 @@
 """
-LangChain 评估示例
-使用简单的相似度比较来评估模型回答
+`LangChain` 评估示例
+包含：问答评估、摘要评估、文本生成评估
 """
 from demos.a01_basic_concepts import get_llm
 
@@ -26,21 +26,20 @@ def run_evaluation(question, answer, reference):
         similarity = len(intersection) / len(union) * 100
     
     # 生成评估结果
-    evaluation_result = {
-        "question": question,
-        "answer": answer,
-        "reference": reference,
-        "similarity": f"{similarity:.2f}%",
-        "comment": "评估完成（基于词汇相似度）"
-    }
+    evaluation_result = f"评估结果:\n" \
+                      f"问题: {question}\n" \
+                      f"模型回答: {answer}\n" \
+                      f"参考回答: {reference}\n" \
+                      f"相似度: {similarity:.2f}%\n" \
+                      f"评估类型: 问答评估 (基于词汇相似度)"
     
     return evaluation_result
 
 if __name__ == "__main__":
     # 测试评估
     result = run_evaluation(
-        question="LangChain 是什么？",
-        answer="LangChain 是一个用于构建 LLM 应用的框架",
-        reference="LangChain 是一个框架，用于开发由语言模型驱动的应用程序。它提供了一套工具、组件和接口，使开发者能够更轻松地构建复杂的 LLM 应用。"
+        question="`LangChain` 是什么？",
+        answer="`LangChain` 是一个用于构建 `LLM` 应用的框架",
+        reference="`LangChain` 是一个框架，用于开发由语言模型驱动的应用程序。它提供了一套工具、组件和接口，使开发者能够更轻松地构建复杂的 `LLM` 应用。"
     )
     print("评估结果:", result)
