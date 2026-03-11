@@ -18,8 +18,8 @@ def create_gradio_interface():
     documents = get_all_documents()
     initial_documents = "\n\n".join([f"{doc.page_content} (来源: {doc.metadata['source']})" for doc in documents])
     
-    with gr.Blocks(title="`LangChain` 完整教程") as demo:
-        gr.Markdown("# `LangChain` 循序渐进教程")
+    with gr.Blocks(title="LangChain 完整教程") as demo:
+        gr.Markdown("# LangChain 循序渐进教程")
         
         # 模型选择
         model_choice = gr.Radio(

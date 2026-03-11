@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 # 加载环境变量
 load_dotenv()
 
-def get_llm(model_name="deepseek"):
+def get_llm(model_name="deepseek", streaming=False):
     """获取语言模型"""
     api_key = os.getenv("DEEPSEEK_API_KEY", "") or os.getenv("OPENAI_API_KEY", "")
     if model_name == "deepseek":
@@ -32,19 +32,21 @@ def get_llm(model_name="deepseek"):
             model="deepseek-chat",
             temperature=0.7,
             api_key=api_key,
-            base_url="https://api.deepseek.com/v1"
+            base_url="https://api.deepseek.com/v1",
+            streaming=streaming
         )
     else:
         # 使用 `OpenAI` API
         return ChatOpenAI(
             model="gpt-3.5-turbo",
             temperature=0.7,
-            api_key=api_key
+            api_key=api_key,
+            streaming=streaming
         )
 
-def basic_concepts_demo(model_name):
+def basic_concepts_demo(model_name, streaming=False):
     """基础概念示例"""
-    llm = get_llm(model_name)
+    llm = get_llm(model_name, streaming=streaming)
     
     # 1. `Prompt` 模板 - 定义可重用的提示结构
     # 1.1 基础文本提示模板 (`PromptTemplate`)
@@ -191,10 +193,21 @@ def basic_concepts_demo(model_name):
     
     return basic_chain
 
-def run_demo(topic, model_name="deepseek"):
+def run_demo(topic, model_name="deepseek", streaming=False):
     """运行示例"""
-    chain = basic_concepts_demo(model_name)
-    return chain.invoke({"topic": topic})
+    chain = basic_concepts_demo(model_name, streaming=streaming)
+    if streaming:
+        # 使用流式调用，返回生成过程
+        print("=== 流式返回结果 ===")
+        result = ""
+        for chunk in chain.stream({"topic": topic}):
+            print(chunk, end="", flush=True)
+            result += chunk
+        print()
+        return result
+    else:
+        # 使用同步调用，返回完整结果
+        return chain.invoke({"topic": topic})
 
 def run_all_prompt_demos(model_name="deepseek"):
     """运行所有提示模板示例"""
@@ -289,9 +302,13 @@ def run_all_prompt_demos(model_name="deepseek"):
 
 if __name__ == "__main__":
     # 测试基础示例
-    print("=== 基础示例 ===")
+    print("=== 基础示例 (同步返回) ===")
     result = run_demo("`LangChain`")
     print(result)
+    
+    # 测试流式返回
+    print("\n=== 基础示例 (流式返回) ===")
+    run_demo("`LangChain`", streaming=True)
     
     # 测试所有提示模板示例
     print("\n=== 所有提示模板示例 ===")
