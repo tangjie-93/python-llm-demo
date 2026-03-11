@@ -13,12 +13,8 @@ from langchain_core.prompts import (
     AIMessagePromptTemplate,      # AI消息提示模板
     ChatMessagePromptTemplate,    # 聊天消息提示模板
     MessagesPlaceholder,          # 消息占位符
-    PipelinePromptTemplate,       # 管道提示模板
     BasePromptTemplate,           # 基础提示模板基类
     StringPromptTemplate,         # 字符串提示模板
-    PythonPromptTemplate,         # Python提示模板
-    ChatPromptValue,              # 聊天提示值
-    PromptValue                   # 提示值基类
 )
 from langchain_core.output_parsers import StrOutputParser
 from langchain_openai import ChatOpenAI
@@ -92,14 +88,14 @@ def basic_concepts_demo(model_name):
     # 1.4 少样本聊天消息提示模板 (`FewShotChatMessagePromptTemplate`)
     # 包含聊天消息示例的提示模板
     chat_examples = [
-        [
-            ("user", "什么是 LangChain？"),
-            ("ai", "LangChain 是一个构建 LLM 应用的框架，提供了丰富的组件和工具。")
-        ],
-        [
-            ("user", "什么是 OpenAI？"),
-            ("ai", "OpenAI 是一家人工智能研究公司，开发了 GPT 系列模型。")
-        ]
+        {
+            "input": "什么是 LangChain？",
+            "output": "LangChain 是一个构建 LLM 应用的框架，提供了丰富的组件和工具。"
+        },
+        {
+            "input": "什么是 OpenAI？",
+            "output": "OpenAI 是一家人工智能研究公司，开发了 GPT 系列模型。"
+        }
     ]
     few_shot_chat_prompt = FewShotChatMessagePromptTemplate(
         examples=chat_examples,
@@ -107,8 +103,6 @@ def basic_concepts_demo(model_name):
             ("user", "{input}"),
             ("ai", "{output}")
         ]),
-        prefix=[("system", "你是一个专业的技术顾问，按照示例格式回答问题")],
-        suffix=[("user", "什么是 {topic}？")],
         input_variables=["topic"]
     )
     
@@ -144,41 +138,20 @@ def basic_concepts_demo(model_name):
         ("user", "{question}")
     ])
     
-    # 1.7 管道提示模板 (`PipelinePromptTemplate`)
-    # 用于组合多个提示模板
+    # 1.7 组合提示模板
+    # 使用基础 PromptTemplate 组合多个模板
     full_template = """
-    {introduction}
+    你是一个专业的技术专家
     
-    {example}
+    例如：Python 是一种编程语言
     
-    {task}
+    请解释什么是 {topic}？
     """
     
-    introduction_prompt = PromptTemplate(
-        input_variables=[],
-        template="你是一个专业的技术专家"
-    )
-    
-    example_prompt = PromptTemplate(
-        input_variables=[],
-        template="例如：Python 是一种编程语言"
-    )
-    
-    task_prompt = PromptTemplate(
+    # 直接定义包含所有内容的提示模板
+    combined_prompt = PromptTemplate(
         input_variables=["topic"],
-        template="请解释什么是 {topic}？"
-    )
-    
-    pipeline_prompt = PipelinePromptTemplate(
-        pipeline_prompts=[
-            ("introduction", introduction_prompt),
-            ("example", example_prompt),
-            ("task", task_prompt)
-        ],
-        final_prompt=PromptTemplate(
-            input_variables=["topic"],
-            template=full_template
-        )
+        template=full_template
     )
     
     # 1.8 选择使用的提示模板
@@ -294,38 +267,23 @@ def run_all_prompt_demos(model_name="deepseek"):
     result = history_chain.invoke({"chat_history": chat_history, "question": "LangChain 和 LLM 有什么关系？"})
     print(result)
     
-    print("\n=== 6. 管道提示模板 (PipelinePromptTemplate) ===")
-    full_template = """
-    {introduction}
+    print("\n=== 6. 组合提示模板 ===")
+    # 直接定义包含所有内容的提示模板
+    combined_template = """
+    你是一个专业的技术专家
     
-    {example}
+    例如：Python 是一种编程语言
     
-    {task}
+    请解释什么是 {topic}？
     """
-    introduction_prompt = PromptTemplate(
-        input_variables=[],
-        template="你是一个专业的技术专家"
-    )
-    example_prompt = PromptTemplate(
-        input_variables=[],
-        template="例如：Python 是一种编程语言"
-    )
-    task_prompt = PromptTemplate(
+    
+    combined_prompt = PromptTemplate(
         input_variables=["topic"],
-        template="请解释什么是 {topic}？"
+        template=combined_template
     )
-    pipeline_prompt = PipelinePromptTemplate(
-        pipeline_prompts=[
-            ("introduction", introduction_prompt),
-            ("example", example_prompt),
-            ("task", task_prompt)
-        ],
-        final_prompt=PromptTemplate(
-            input_variables=["topic"],
-            template=full_template
-        )
-    )
-    pipeline_chain = pipeline_prompt | llm | output_parser
+    
+    # 使用组合模板
+    pipeline_chain = combined_prompt | llm | output_parser
     result = pipeline_chain.invoke({"topic": "LangChain"})
     print(result)
 

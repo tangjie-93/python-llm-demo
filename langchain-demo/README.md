@@ -84,11 +84,20 @@ python app.py
 - 支持动态参数填充
 - `ChatPromptTemplate`：聊天提示模板
 - `PromptTemplate`：纯文本提示模板
+- `FewShotPromptTemplate`：少样本提示模板，包含示例引导
+- `FewShotChatMessagePromptTemplate`：少样本聊天消息提示模板
+- `SystemMessagePromptTemplate`：系统消息提示模板
+- `HumanMessagePromptTemplate`：人类消息提示模板
+- `AIMessagePromptTemplate`：AI消息提示模板
+- `ChatMessagePromptTemplate`：聊天消息提示模板
+- `StringPromptTemplate`：字符串提示模板
 
 #### 6.2.2 提示组合（Prompt Composition`）
 - 将多个提示组合成更复杂的结构
 - `RunnableParallel`：并行组合
 - `RunnableSequence`：序列组合
+- `MessagesPlaceholder`：消息占位符，用于插入动态消息列表（如对话历史）
+- `LangChain Expression Language (LCEL)`：使用 `|` 运算符组合提示和其他组件
 
 #### 6.2.3 示例选择器（Example Selectors`）
 - 根据输入动态选择相关示例

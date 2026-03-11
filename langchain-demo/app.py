@@ -31,7 +31,7 @@ def create_gradio_interface():
         # 1. 基础概念
         with gr.Tab("1. 基础概念"):
             gr.Markdown("## 基础概念示例")
-            topic = gr.Textbox(label="输入主题", value="`LangChain`")
+            topic = gr.Textbox(label="输入主题", value="LangChain")
             basic_output = gr.HTML(label="解释")
             basic_button = gr.Button("生成解释")
             
@@ -49,7 +49,7 @@ def create_gradio_interface():
             
             # 顺序链
             gr.Markdown("### 顺序链 (`SequentialChain`)")
-            text = gr.Textbox(label="输入文本", value="`LangChain` 是一个强大的框架，用于构建基于大语言模型的应用。")
+            text = gr.Textbox(label="输入文本", value="LangChain 是一个强大的框架，用于构建基于大语言模型的应用。")
             english_output = gr.HTML(label="英文翻译")
             summary_output = gr.HTML(label="总结")
             chain_button = gr.Button("执行顺序链")
@@ -65,7 +65,7 @@ def create_gradio_interface():
             
             # 路由链
             gr.Markdown("### 路由链 (`RouterChain`)")
-            router_input = gr.Textbox(label="输入请求", value="请总结以下内容：`LangChain` 是一个用于构建 `LLM` 应用的框架")
+            router_input = gr.Textbox(label="输入请求", value="请总结以下内容：LangChain 是一个用于构建 LLM 应用的框架")
             router_output = gr.HTML(label="路由链结果")
             router_button = gr.Button("执行路由链")
             
@@ -107,7 +107,7 @@ def create_gradio_interface():
             
             # 检索功能
             gr.Markdown("### 文档检索")
-            query = gr.Textbox(label="输入查询", value="`LangChain` 的核心概念")
+            query = gr.Textbox(label="输入查询", value="LangChain的核心概念")
             docs_output = gr.HTML(label="检索结果")
             doc_button = gr.Button("检索")
             
@@ -138,9 +138,9 @@ def create_gradio_interface():
         # 6. 评估
         with gr.Tab("6. 评估"):
             gr.Markdown("## 评估示例")
-            question = gr.Textbox(label="问题", value="`LangChain` 是什么？")
-            answer = gr.Textbox(label="模型回答", value="`LangChain` 是一个用于构建 `LLM` 应用的框架")
-            reference = gr.Textbox(label="参考回答", value="`LangChain` 是一个框架，用于开发由语言模型驱动的应用程序。它提供了一套工具、组件和接口，使开发者能够更轻松地构建复杂的 `LLM` 应用。")
+            question = gr.Textbox(label="问题", value="LangChain 是什么？")
+            answer = gr.Textbox(label="模型回答", value="LangChain 是一个用于构建 LLM 应用的框架")
+            reference = gr.Textbox(label="参考回答", value="LangChain 是一个框架，用于开发由语言模型驱动的应用程序。它提供了一套工具、组件和接口，使开发者能够更轻松地构建复杂的 LLM 应用。")
             eval_output = gr.HTML(label="评估结果")
             eval_button = gr.Button("评估")
             
