@@ -11,11 +11,19 @@ from demos.a03_memory import run_memory_demo
 from demos.a04_document_processing import run_document_retrieval, get_all_documents
 from demos.a05_tools_agents import run_agent
 from demos.a06_evaluation import run_evaluation
+import os
+
+# 获取当前文件所在目录
+current_dir = os.path.dirname(os.path.abspath(__file__))
+# 文档目录
+DOCS_DIRECTORY = os.path.join(current_dir, "docs")
+# 向量存储路径
+VECTOR_STORE_PATH = os.path.join(current_dir, "vector_store")
 
 def create_gradio_interface():
     """创建 `Gradio` 界面"""
     # 预加载文档
-    documents = get_all_documents()
+    documents = get_all_documents(DOCS_DIRECTORY, VECTOR_STORE_PATH)
     initial_documents = "\n\n".join([f"{doc.page_content} (来源: {doc.metadata['source']})" for doc in documents])
     
     with gr.Blocks(title="LangChain 完整教程") as demo:
@@ -112,8 +120,14 @@ def create_gradio_interface():
             doc_button = gr.Button("检索")
             
             def document_handler(query):
-                docs = run_document_retrieval(query)
-                result = "\n\n".join([f"{doc.page_content} (来源: {doc.metadata['source']})" for doc in docs])
+                docs = run_document_retrieval(query, DOCS_DIRECTORY, VECTOR_STORE_PATH, return_only_relevant=True)
+                # 格式化结果，添加更好的样式
+                formatted_results = []
+                for i, doc in enumerate(docs, 1):
+                    formatted_result = f"### 文档 {i} (来源: {doc.metadata['source']})\n{doc.page_content}"
+                    formatted_results.append(formatted_result)
+                
+                result = "\n\n---\n\n".join(formatted_results)
                 # 将 `Markdown` 转换为 `HTML`
                 html = f"<div class='output-container'>{markdown.markdown(result)}</div>"
                 return html
