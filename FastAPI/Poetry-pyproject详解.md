@@ -20,7 +20,7 @@
 
 一个完整的 `pyproject.toml` 文件通常包含以下区域：
 
-```toml
+```json
 [project]                    # PEP 621 标准元数据
 name = "my-project"
 version = "0.1.0"
@@ -55,7 +55,7 @@ package-mode = "false"
 
 ### 2.1 基础元数据
 
-```toml
+```json
 [project]
 name = "my-fastapi-app"           # 项目名称（必填）
 version = "0.1.0"                  # 版本号（必填）
@@ -82,7 +82,7 @@ classifiers = [
 
 ### 2.2 Python 版本要求
 
-```toml
+```json
 requires-python = ">=3.11"        # 最低 Python 版本
 ```
 
@@ -98,7 +98,7 @@ requires-python = ">=3.11"        # 最低 Python 版本
 
 #### 主依赖
 
-```toml
+```json
 dependencies = [
     "fastapi>=0.100.0",
     "uvicorn[standard]>=0.23.0",
@@ -127,7 +127,7 @@ dependencies = [
 
 #### 可选依赖（ extras）
 
-```toml
+```json
 [project.optional-dependencies]
 # 开发依赖
 dev = [
@@ -165,7 +165,7 @@ all = [
 
 #### 依赖来源
 
-```toml
+```json
 dependencies = [
     # PyPI 包
     "fastapi",
@@ -187,7 +187,7 @@ dependencies = [
 
 ### 2.4 脚本入口点
 
-```toml
+```json
 [project.scripts]
 # 格式：命令名 = "模块名:函数名"
 myapp = "myapp.main:main"
@@ -199,7 +199,7 @@ fastapi-app = "main:app"  # poetry run fastapi-app
 
 ### 2.5 其他配置
 
-```toml
+```json
 # 项目 URL
 [project.urls]
 Homepage = "https://github.com/username/project"
@@ -219,7 +219,7 @@ Issues = "https://github.com/username/project/issues"
 
 `[build-system]` 定义了项目的构建系统。
 
-```toml
+```json
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]  # 构建所需依赖
 build-backend = "poetry.core.masonry.api"  # 构建后端
@@ -242,7 +242,7 @@ build-backend = "poetry.core.masonry.api"  # 构建后端
 
 ### 4.1 基本配置
 
-```toml
+```json
 [tool.poetry]
 name = "my-fastapi-project"           # 包名（必填）
 version = "0.1.0"                     # 版本（必填）
@@ -256,7 +256,7 @@ documentation = "https://docs.example.com"  # 文档 URL
 
 ### 4.2 包配置
 
-```toml
+```json
 # 包模式配置
 package-mode = "true"   # true: 包含源码包; false: 作为单一模块
 
@@ -283,7 +283,7 @@ include = [
 
 ### 4.3 依赖配置
 
-```toml
+```json
 [tool.poetry.dependencies]
 # Python 版本
 python = "^3.11"
@@ -331,7 +331,7 @@ mkdocs-material = "^9.0.0"
 
 ### 4.4 发布配置
 
-```toml
+```json
 [tool.poetry]
 # 仓库配置
 repository = "https://github.com/username/project"
@@ -349,7 +349,7 @@ packages = [
 
 ### 4.5 脚本配置
 
-```toml
+```json
 [tool.poetry.scripts]
 # 安装包时创建的命令
 # 格式：命令名 = "模块名:函数名"
@@ -366,7 +366,7 @@ app = "main:app"
 
 ### 4.6 完整的 tool.poetry 示例
 
-```toml
+```json
 [tool.poetry]
 name = "fastapi-project"
 version = "0.1.0"
@@ -426,7 +426,7 @@ app = "main:app"
 
 ### 5.1 Black 代码格式化
 
-```toml
+```json
 [tool.black]
 line-length = 100              # 每行最大长度
 target-version = ['py311']    # 目标 Python 版本
@@ -457,7 +457,7 @@ extend-exclude = '''
 
 ### 5.2 Ruff Linter
 
-```toml
+```json
 [tool.ruff]
 line-length = 100
 target-version = "py311"
@@ -502,7 +502,7 @@ ignore = [
 
 ### 5.3 MyPy 类型检查
 
-```toml
+```json
 [tool.mypy]
 python_version = "3.11"
 warn_return_any = true
@@ -528,7 +528,7 @@ ignore_missing_imports = true
 
 ### 5.4 Pytest 测试
 
-```toml
+```json
 [tool.pytest.ini_options]
 minversion = "7.0"
 testpaths = ["tests"]
@@ -560,7 +560,7 @@ filterwarnings = [
 
 #### isort 导入排序
 
-```toml
+```json
 [tool.isort]
 profile = "black"
 line_length = 100
@@ -577,7 +577,7 @@ known_first_party = ["app"]
 
 #### coverage.py 测试覆盖
 
-```toml
+```json
 [tool.coverage.run]
 source = ["app"]
 omit = [
@@ -604,7 +604,7 @@ skip_covered = false
 
 #### Flit（备选构建系统）
 
-```toml
+```json
 [tool.flit.module]
 module = "my_package"
 
@@ -618,7 +618,7 @@ include = ["tests/"]
 
 ### FastAPI 项目完整配置
 
-```toml
+```json
 [project]
 name = "fastapi-project"
 version = "0.1.0"

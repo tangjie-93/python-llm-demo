@@ -1,0 +1,21 @@
+[project]
+name = "fastapi-backend"
+version = "0.1.0"
+description = "FastAPI 后端项目"
+authors = [{name = "智核", email = "tang.jie@ecar.com"}]
+requires-python = ">=3.11"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+fastapi = "^0.100.0"
+uvicorn = "^0.23.0"
+pydantic = "^2.0.0"
+pydantic-settings = "^2.0.0"
+sqlmodel = "^0.0.14"
+python-jose = {extras = ["cryptography"], version = "^3.3.0"}
+passlib = {extras = ["bcrypt"], version = "^1.7.4"}
+python-multipart = "^0.0.6"
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
