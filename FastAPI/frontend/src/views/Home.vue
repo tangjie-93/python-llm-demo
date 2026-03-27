@@ -1,107 +1,65 @@
 <template>
   <div class="home-container">
-    <el-container>
-      <el-header>
-        <div class="header-content">
-          <h2>FastAPI 后台管理系统</h2>
-          <div class="user-info">
-            <span>欢迎，{{ authStore.userInfo?.username }}</span>
-            <el-button type="danger" size="small" @click="handleLogout">
-              退出
-            </el-button>
-          </div>
+    <el-card class="welcome-card">
+      <template #header>
+        <div class="card-header">
+          <span>欢迎访问 FastAPI 后台管理系统</span>
         </div>
-      </el-header>
-      
-      <el-container>
-        <el-aside width="200px">
-          <el-menu
-            :default-active="activeMenu"
-            router
-            class="el-menu-vertical"
-          >
-            <el-menu-item index="/home">
-              <el-icon><House /></el-icon>
-              <span>首页</span>
-            </el-menu-item>
-            <el-menu-item index="/users">
-              <el-icon><User /></el-icon>
-              <span>用户管理</span>
-            </el-menu-item>
-            <el-menu-item index="/items">
-              <el-icon><Goods /></el-icon>
-              <span>物品管理</span>
-            </el-menu-item>
-          </el-menu>
-        </el-aside>
-        
-        <el-main>
-          <router-view />
-        </el-main>
-      </el-container>
-    </el-container>
+      </template>
+      <div class="welcome-content">
+        <p>您好，{{ authStore.userInfo?.username }}！</p>
+        <p>这是系统的首页，您可以通过左侧菜单访问不同的功能模块。</p>
+        <div class="stats-container">
+          <el-statistic title="用户数量" :value="userCount" />
+          <el-statistic title="项目数量" :value="itemCount" />
+        </div>
+      </div>
+    </el-card>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, onMounted } from 'vue'
 import { useAuthStore } from '@/stores/auth'
-import { House, User, Goods } from '@element-plus/icons-vue'
 
-const router = useRouter()
-const route = useRoute()
 const authStore = useAuthStore()
-
-const activeMenu = computed(() => route.path)
+const userCount = ref(0)
+const itemCount = ref(0)
 
 onMounted(() => {
   authStore.fetchUserInfo()
+  // 模拟获取统计数据
+  userCount.value = 10
+  itemCount.value = 20
 })
-
-function handleLogout() {
-  authStore.logout()
-  router.push('/login')
-}
 </script>
 
 <style scoped>
 .home-container {
-  min-height: 100vh;
+  padding: 20px;
 }
 
-.el-header {
-  background-color: #409eff;
-  color: white;
-  line-height: 60px;
+.welcome-card {
+  margin-bottom: 20px;
 }
 
-.header-content {
+.card-header {
+  font-size: 18px;
+  font-weight: bold;
+}
+
+.welcome-content {
+  padding: 20px 0;
+}
+
+.welcome-content p {
+  margin-bottom: 15px;
+  font-size: 16px;
+}
+
+.stats-container {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.header-content h2 {
-  margin: 0;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 15px;
-}
-
-.el-aside {
-  background-color: #fff;
-  border-right: 1px solid #e6e6e6;
-}
-
-.el-menu-vertical {
-  border-right: none;
-}
-
-.el-main {
-  background-color: #f5f7fa;
+  gap: 20px;
+  margin-top: 30px;
 }
 </style>

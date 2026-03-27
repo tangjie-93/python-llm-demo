@@ -8,6 +8,9 @@
 from sqlmodel import SQLModel, create_engine, Session
 from typing import Generator
 from app.core.config import settings
+# 手动导入模型以确保它们被注册
+# from app.models.user import User
+# from app.models.item import Item
 
 # 打印数据库连接信息
 print(f"Creating engine with DATABASE_URL: {settings.DATABASE_URL}")
@@ -43,6 +46,8 @@ def create_db_and_tables():
     print("=== Creating database tables ===")
     # 打印当前已注册的模型表信息
     print(f"SQLModel.metadata tables: {list(SQLModel.metadata.tables.keys())}")
+    print(f"After importing models, tables: {list(SQLModel.metadata.tables.keys())}")
+    
     try:
         SQLModel.metadata.create_all(engine)
         print("=== Database tables created successfully ===")

@@ -30,9 +30,9 @@ router = APIRouter()
 # ==================== 密码加密相关 ====================
 
 # CryptContext 用于密码 hashing
-# schemes=["bcrypt"]: 使用 bcrypt 算法进行密码加密（推荐）
+# schemes=["pbkdf2_sha256"]: 使用 pbkdf2_sha256 算法进行密码加密
 # deprecated="auto": 允许密码算法升级
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 # OAuth2PasswordBearer 用于从请求头中提取 token
 # tokenUrl 指定了登录接口的 URL（相对路径）
@@ -65,6 +65,22 @@ class TokenData(BaseModel):
     username: Optional[str] = None
 
 
+class UserCreate(BaseModel):
+    """
+    用户创建请求模型
+
+    用于接收用户注册时的请求数据
+
+    Attributes:
+        username: 用户名
+        email: 邮箱地址
+        password: 密码
+    """
+    username: str
+    email: str
+    password: str
+
+
 # ==================== 密码处理函数 ====================
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
@@ -95,6 +111,8 @@ def get_password_hash(password: str) -> str:
     Returns:
         str: 加密后的哈希密码
     """
+    # Truncate password to 72 bytes to avoid bcrypt limit
+    password = password[:72]
     return pwd_context.hash(password)
 
 
@@ -190,7 +208,7 @@ async def get_current_user(
 
 # ==================== 路由端点 ====================
 
-@router.post("/token", response_model=Token)
+@router.post("/login", response_model=Token)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     session: Session = Depends(get_session)
@@ -241,9 +259,7 @@ async def login(
 
 @router.post("/register")
 async def register(
-    username: str,
-    email: str,
-    password: str,
+    user_data: UserCreate,
     session: Session = Depends(get_session)
 ):
     """
@@ -252,9 +268,7 @@ async def register(
     创建新用户账号。
 
     Args:
-        username: 用户名（必填）
-        email: 邮箱地址（必填）
-        password: 密码（必填）
+        user_data: 用户注册数据
         session: 数据库会话
 
     Returns:
@@ -265,7 +279,7 @@ async def register(
     """
     # 检查用户名或邮箱是否已存在
     existing_user = session.exec(
-        select(User).where((User.username == username) | (User.email == email))
+        select(User).where((User.username == user_data.username) | (User.email == user_data.email))
     ).first()
 
     if existing_user:
@@ -275,12 +289,12 @@ async def register(
         )
 
     # 加密密码
-    hashed_password = get_password_hash(password)
+    hashed_password = get_password_hash(user_data.password)
 
     # 创建新用户
     new_user = User(
-        username=username,
-        email=email,
+        username=user_data.username,
+        email=user_data.email,
         hashed_password=hashed_password,
         is_active=True  # 新用户默认激活
     )

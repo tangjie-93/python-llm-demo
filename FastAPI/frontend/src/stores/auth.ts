@@ -13,7 +13,10 @@ export const useAuthStore = defineStore('auth', () => {
     formData.append('username', username)
     formData.append('password', password)
     
-    const response = await api.post('/auth/token', formData)
+    const response = await api.post('/auth/login', formData)
+    if (!response.data.access_token) {
+      throw new Error('登录失败，未返回 access_token')
+    }
     token.value = response.data.access_token
     localStorage.setItem('token', response.data.access_token)
     await fetchUserInfo()

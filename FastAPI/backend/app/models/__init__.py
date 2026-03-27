@@ -20,10 +20,11 @@
     from app.models.item import Item
 """
 
-# 该文件使 models 目录成为一个 Python 包
-# 当前只包含文档字符串，不执行任何初始化代码
-#
-# 注意：如果你希望在其他模块中更方便地导入模型，
-# 可以在这里添加导入语句：
-#   from app.models.user import User, UserCreate, UserUpdate, UserResponse
-#   from app.models.item import Item, ItemCreate, ItemUpdate, ItemResponse
+# 导入模型以确保它们在 SQLModel.metadata 中注册
+from app.models.user import User, UserCreate, UserUpdate, UserResponse
+from app.models.item import Item, ItemCreate, ItemUpdate, ItemResponse
+
+__all__ = [
+    "User", "UserCreate", "UserUpdate", "UserResponse",
+    "Item", "ItemCreate", "ItemUpdate", "ItemResponse"
+]

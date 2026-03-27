@@ -69,7 +69,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
-import { useUserStore, type User } from '@/stores/user'
+import { useUserStore, type User, type UserCreate } from '@/stores/user'
 
 const userStore = useUserStore()
 
@@ -157,13 +157,15 @@ async function handleSubmit() {
           await userStore.updateUser(currentId.value, form)
           ElMessage.success('更新成功')
         } else {
-          await userStore.createUser(form)
+          await userStore.createUser(form as UserCreate)
           ElMessage.success('创建成功')
         }
         dialogVisible.value = false
         fetchData()
       } catch (error: any) {
-        ElMessage.error(error.response?.data?.detail || '操作失败')
+        const errorMessage = error.response?.data?.message || error.response?.data?.error || error.response?.data?.detail || '操作失败'
+        ElMessage.error(errorMessage)
+        console.error('操作失败:', error)
       } finally {
         submitLoading.value = false
       }

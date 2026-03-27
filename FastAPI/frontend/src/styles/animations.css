@@ -1,0 +1,173 @@
+/* 全局动画样式 */
+
+/* 1. 淡入淡出动画 */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* 2. 滑动动画 - 右侧滑入 */
+.slide-fade-enter-active {
+  transition: all 0.3s ease-out;
+}
+
+.slide-fade-leave-active {
+  transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
+}
+
+.slide-fade-enter-from,
+.slide-fade-leave-to {
+  transform: translateX(20px);
+  opacity: 0;
+}
+
+/* 3. 淡入淡出 + 下方滑入 */
+.fade-slide-enter-active {
+  transition: all 0.4s ease-out;
+}
+
+.fade-slide-leave-active {
+  transition: all 0.3s cubic-bezier(1, 0.5, 0.8, 1);
+}
+
+.fade-slide-enter-from,
+.fade-slide-leave-to {
+  transform: translateY(20px);
+  opacity: 0;
+}
+
+/* 4. 缩放动画 */
+.scale-enter-active,
+.scale-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.scale-enter-from {
+  transform: scale(0);
+}
+
+.scale-leave-to {
+  transform: scale(0);
+}
+
+/* 5. 旋转动画 */
+.rotate-enter-active,
+.rotate-leave-active {
+  transition: all 0.5s ease;
+}
+
+.rotate-enter-from {
+  transform: rotate(-180deg) scale(0);
+  opacity: 0;
+}
+
+.rotate-leave-to {
+  transform: rotate(180deg) scale(0);
+  opacity: 0;
+}
+
+/* 6. 弹性动画 */
+.bounce-enter-active {
+  animation: bounce-in 0.6s;
+}
+
+.bounce-leave-active {
+  animation: bounce-out 0.6s;
+}
+
+@keyframes bounce-in {
+  0% {
+    transform: scale(0);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes bounce-out {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(0);
+  }
+}
+
+/* 7. 左侧滑入动画 */
+.slide-left-enter-active,
+.slide-left-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-left-enter-from {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+.slide-left-leave-to {
+  transform: translateX(-100%);
+  opacity: 0;
+}
+
+/* 8. 上方滑入动画 */
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: all 0.3s ease;
+}
+
+.slide-up-enter-from {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+.slide-up-leave-to {
+  transform: translateY(-100%);
+  opacity: 0;
+}
+
+/* 9. 淡入淡出 + 位移组合动画 */
+.fade-move-enter-active,
+.fade-move-leave-active {
+  transition: all 0.4s ease;
+}
+
+.fade-move-enter-from {
+  transform: translate(30px, 30px);
+  opacity: 0;
+}
+
+.fade-move-leave-to {
+  transform: translate(-30px, -30px);
+  opacity: 0;
+}
+
+/* 10. 脉冲动画 */
+.pulse-enter-active {
+  animation: pulse 0.6s ease-out;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}

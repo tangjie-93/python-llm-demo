@@ -83,10 +83,14 @@ async function handleLogin() {
       loading.value = true
       try {
         await authStore.login(loginForm.username, loginForm.password)
-        ElMessage.success('登录成功')
-        router.push('/home')
-      } catch (error: any) {
-        ElMessage.error(error.response?.data?.detail || '登录失败')
+        ElMessage.success({
+          message: '登录成功',
+          duration: 500 // 1.5秒
+        })
+        // 延迟跳转，让用户看到成功提示
+        setTimeout(() => {
+          router.push('/home')
+        }, 500)
       } finally {
         loading.value = false
       }

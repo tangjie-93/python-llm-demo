@@ -19,7 +19,7 @@ export const useItemStore = defineStore('item', () => {
   async function fetchItems(skip = 0, limit = 100) {
     loading.value = true
     try {
-      const response = await api.get<Item[]>('/items', {
+      const response = await api.get<Item[]>('/items/', {
         params: { skip, limit }
       })
       items.value = response.data
@@ -34,7 +34,7 @@ export const useItemStore = defineStore('item', () => {
   async function getItem(id: number) {
     loading.value = true
     try {
-      const response = await api.get<Item>(`/items/${id}`)
+      const response = await api.get<Item>(`/items/${id}/`)
       currentItem.value = response.data
       return response.data
     } catch (error) {
@@ -47,7 +47,7 @@ export const useItemStore = defineStore('item', () => {
 
   async function createItem(itemData: Partial<Item>) {
     try {
-      const response = await api.post<Item>('/items', itemData)
+      const response = await api.post<Item>('/items/', itemData)
       items.value.push(response.data)
       return response.data
     } catch (error) {
@@ -58,7 +58,7 @@ export const useItemStore = defineStore('item', () => {
 
   async function updateItem(id: number, itemData: Partial<Item>) {
     try {
-      const response = await api.put<Item>(`/items/${id}`, itemData)
+      const response = await api.put<Item>(`/items/${id}/`, itemData)
       const index = items.value.findIndex(i => i.id === id)
       if (index !== -1) {
         items.value[index] = response.data
@@ -72,7 +72,7 @@ export const useItemStore = defineStore('item', () => {
 
   async function deleteItem(id: number) {
     try {
-      await api.delete(`/items/${id}`)
+      await api.delete(`/items/${id}/`)
       items.value = items.value.filter(i => i.id !== id)
     } catch (error) {
       console.error('删除物品失败:', getErrorMessage(error))

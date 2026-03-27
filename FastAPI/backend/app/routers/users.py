@@ -20,6 +20,7 @@ from typing import List
 
 from app.core.database import get_session
 from app.models.user import User, UserCreate, UserUpdate, UserResponse
+from app.routers.auth import get_password_hash
 
 # 创建 APIRouter 实例
 router = APIRouter()
@@ -78,8 +79,36 @@ def create_user(user: UserCreate, session: Session = Depends(get_session)):
 
     Returns:
         UserResponse: 创建成功后的用户信息
+
+    Raises:
+        HTTPException 400: 用户名或邮箱已存在
     """
-    db_user = User.model_validate(user)
+    # 检查用户名是否已存在
+    existing_user = session.exec(
+        select(User).where((User.username == user.username) | (User.email == user.email))
+    ).first()
+
+    if existing_user:
+        if existing_user.username == user.username:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="用户名已存在"
+            )
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="邮箱已存在"
+            )
+
+    # Hash the password before creating the user
+    hashed_password = get_password_hash(user.password)
+    # Create user with hashed password
+    db_user = User(
+        username=user.username,
+        email=user.email,
+        hashed_password=hashed_password,
+        full_name=user.full_name
+    )
     session.add(db_user)
     session.commit()
     session.refresh(db_user)
@@ -111,6 +140,11 @@ def update_user(user_id: int, user: UserUpdate, session: Session = Depends(get_s
 
     # 将请求中的非空字段更新到数据库对象
     user_data = user.model_dump(exclude_unset=True)
+    
+    # Handle password hashing if password is being updated
+    if "password" in user_data:
+        user_data["hashed_password"] = get_password_hash(user_data.pop("password"))
+    
     for key, value in user_data.items():
         setattr(db_user, key, value)
 

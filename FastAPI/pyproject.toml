@@ -5,7 +5,7 @@ description = "主要用于学习fastApi"
 authors = [
     {name = "智核",email = "tang.jie@ecar.com"}
 ]
-requires-python = ">=3.13"
+requires-python = ">=3.12"
 dependencies = [
 ]
 

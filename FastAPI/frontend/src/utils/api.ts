@@ -44,31 +44,26 @@ api.interceptors.response.use(
   },
   (error: AxiosError<ApiError>) => {
     const responseData = error.response?.data
-
     if (error.response?.status === 401) {
-      localStorage.removeItem('token')
-      window.location.href = '/login'
-      ElMessage.error('登录已过期，请重新登录')
+       // 登录失败，显示具体错误信息
+      const errorMessage = responseData?.message || responseData?.error || '用户名或密码不正确'
+      // 检查是否是登录接口的错误
+      if (error.config?.url?.includes('/auth/login')) {
+        ElMessage.error({
+          message: errorMessage,
+          duration: 5000 // 5秒
+        })
+      } else {
+        // 其他 401 错误，视为登录过期
+        localStorage.removeItem('token')
+        window.location.href = '/login'
+        ElMessage.error({
+          message: '登录已过期，请重新登录',
+          duration: 5000 // 5秒
+        })
+      }
       return Promise.reject(error)
     }
-
-    const errorMessage = responseData?.message || responseData?.error || '请求失败'
-    const errorDetails = responseData?.details
-    const traceback = responseData?.traceback
-
-    console.error('=== API Error ===')
-    console.error('Status:', error.response?.status)
-    console.error('Error:', errorMessage)
-    if (errorDetails) {
-      console.error('Details:', errorDetails)
-    }
-    if (traceback) {
-      console.error('Traceback:', traceback)
-    }
-    console.error('================')
-
-    ElMessage.error(errorMessage)
-
     return Promise.reject(error)
   }
 )

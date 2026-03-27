@@ -10,6 +10,10 @@ export interface User {
   is_active: boolean
 }
 
+export interface UserCreate extends Partial<User> {
+  password: string
+}
+
 export const useUserStore = defineStore('user', () => {
   const users = ref<User[]>([])
   const currentUser = ref<User | null>(null)
@@ -18,7 +22,7 @@ export const useUserStore = defineStore('user', () => {
   async function fetchUsers() {
     loading.value = true
     try {
-      const response = await api.get<User[]>('/users')
+      const response = await api.get<User[]>('/users/')
       users.value = response.data
     } catch (error) {
       console.error('获取用户列表失败:', getErrorMessage(error))
@@ -31,7 +35,7 @@ export const useUserStore = defineStore('user', () => {
   async function getUser(id: number) {
     loading.value = true
     try {
-      const response = await api.get<User>(`/users/${id}`)
+      const response = await api.get<User>(`/users/${id}/`)
       currentUser.value = response.data
       return response.data
     } catch (error) {
@@ -42,9 +46,9 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  async function createUser(userData: Partial<User>) {
+  async function createUser(userData: UserCreate) {
     try {
-      const response = await api.post<User>('/users', userData)
+      const response = await api.post<User>('/users/', userData)
       users.value.push(response.data)
       return response.data
     } catch (error) {
@@ -55,7 +59,7 @@ export const useUserStore = defineStore('user', () => {
 
   async function updateUser(id: number, userData: Partial<User>) {
     try {
-      const response = await api.put<User>(`/users/${id}`, userData)
+      const response = await api.put<User>(`/users/${id}/`, userData)
       const index = users.value.findIndex(u => u.id === id)
       if (index !== -1) {
         users.value[index] = response.data
@@ -69,7 +73,7 @@ export const useUserStore = defineStore('user', () => {
 
   async function deleteUser(id: number) {
     try {
-      await api.delete(`/users/${id}`)
+      await api.delete(`/users/${id}/`)
       users.value = users.value.filter(u => u.id !== id)
     } catch (error) {
       console.error('删除用户失败:', getErrorMessage(error))

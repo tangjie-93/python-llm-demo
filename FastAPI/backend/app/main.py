@@ -16,7 +16,8 @@ from app.middleware import setup_middleware
 from app.routers import setup_routers
 from app.exceptions import setup_exception_handlers
 
-
+# Import models to ensure they're registered before creating tables
+from app.models import user, item
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
@@ -58,6 +59,7 @@ async def lifespan(app: FastAPI):
 # - redoc_url: ReDoc 文档访问地址（默认 /redoc）
 # - openapi_url: OpenAPI JSON 规范地址
 # - debug: 调试模式开关
+# - lifespan: 应用生命周期管理函数
 app = FastAPI(
     title=settings.APP_NAME,
     version=settings.VERSION,
@@ -66,6 +68,7 @@ app = FastAPI(
     redoc_url="/redoc",
     openapi_url="/openapi.json",
     debug=settings.DEBUG,
+    lifespan=lifespan,
 )
 
 # 按顺序配置应用的各个组件

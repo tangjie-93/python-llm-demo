@@ -47,8 +47,7 @@ class Settings(BaseSettings):
 
     # CORS 跨域配置
     # 列出允许访问 API 的前端域名
-    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:3000"]
-
+    CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
     class Config:
         """
         Pydantic Settings 配置
@@ -77,3 +76,4 @@ def get_settings() -> Settings:
 # 创建全局配置实例
 # 在应用任何地方都可以通过 from app.core.config import settings 导入使用
 settings = get_settings()
+print("settings:",settings)
