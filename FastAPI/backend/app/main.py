@@ -97,3 +97,54 @@ def health_check():
         dict: 固定返回 {"status": "healthy"}
     """
     return {"status": "healthy"}
+
+
+@app.get("/debug/tables")
+def debug_tables():
+    """
+    调试接口：查看数据库中的表
+
+    Returns:
+        dict: 包含所有表名的列表
+    """
+    import sqlite3
+    from pathlib import Path
+
+    db_path = settings.DATABASE_URL.replace("sqlite:///", "")
+    db_path = Path(db_path)
+
+    if not db_path.exists():
+        return {"error": "数据库文件不存在", "path": str(db_path.absolute())}
+
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    # 获取所有表名
+    cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
+    tables = cursor.fetchall()
+
+    # 获取每个表的详细信息
+    table_info = {}
+    for table in tables:
+        table_name = table[0]
+        cursor.execute(f"PRAGMA table_info({table_name});")
+        columns = cursor.fetchall()
+        table_info[table_name] = [
+            {
+                "cid": col[0],
+                "name": col[1],
+                "type": col[2],
+                "notnull": col[3],
+                "default_value": col[4],
+                "pk": col[5]
+            }
+            for col in columns
+        ]
+
+    conn.close()
+
+    return {
+        "database_path": str(db_path.absolute()),
+        "tables": list(table_info.keys()),
+        "table_details": table_info
+    }
