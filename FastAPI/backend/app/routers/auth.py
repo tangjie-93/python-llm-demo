@@ -12,7 +12,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -21,7 +21,9 @@ from sqlmodel import Session, select
 
 from app.core.config import settings
 from app.core.database import get_session
+from app.core.response import success_response, error_response
 from app.models.user import User
+from app.models.response import ApiResponse
 
 # 创建 APIRouter 实例
 # prefix 已在 routers/__init__.py 中设置为 /api/auth
@@ -137,8 +139,8 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         # 如果指定了过期时间增量
         expire = datetime.now(timezone.utc) + expires_delta
     else:
-        # 默认 15 分钟
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
+        # 默认 24 小时
+        expire = datetime.now(timezone.utc) + timedelta(hours=24)
 
     # 将过期时间添加到 token 载荷中
     to_encode.update({"exp": expire})
@@ -208,7 +210,7 @@ async def get_current_user(
 
 # ==================== 路由端点 ====================
 
-@router.post("/login", response_model=Token)
+@router.post("/login", response_model=ApiResponse[Token])
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     session: Session = Depends(get_session)
@@ -224,7 +226,7 @@ async def login(
         session: 数据库会话
 
     Returns:
-        Token: 包含 access_token 和 token_type 的响应
+        ApiResponse[Token]: 包含 access_token 和 token_type 的统一响应
 
     Raises:
         HTTPException 401: 用户名或密码错误
@@ -240,11 +242,7 @@ async def login(
 
     # 验证用户是否存在且密码正确
     if not user or not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        return error_response(msg="用户名或密码错误", code=status.HTTP_401_UNAUTHORIZED)
 
     # 创建访问令牌
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -254,10 +252,10 @@ async def login(
     )
 
     # 返回令牌
-    return {"access_token": access_token, "token_type": "bearer"}
+    return success_response(data={"access_token": access_token, "token_type": "bearer"}, msg="登录成功")
 
 
-@router.post("/register")
+@router.post("/register", response_model=ApiResponse)
 async def register(
     user_data: UserCreate,
     session: Session = Depends(get_session)
@@ -272,7 +270,7 @@ async def register(
         session: 数据库会话
 
     Returns:
-        dict: 包含成功消息和用户 ID
+        ApiResponse: 包含成功消息和用户 ID 的统一响应
 
     Raises:
         HTTPException 400: 用户名或邮箱已存在
@@ -283,10 +281,7 @@ async def register(
     ).first()
 
     if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username or email already registered"
-        )
+        return error_response(msg="用户名或邮箱已存在", code=status.HTTP_400_BAD_REQUEST)
 
     # 加密密码
     hashed_password = get_password_hash(user_data.password)
@@ -304,10 +299,10 @@ async def register(
     session.commit()
     session.refresh(new_user)
 
-    return {"message": "User created successfully", "user_id": new_user.id}
+    return success_response(data={"user_id": new_user.id}, msg="用户注册成功", code=status.HTTP_201_CREATED)
 
 
-@router.get("/me")
+@router.get("/me", response_model=ApiResponse)
 async def read_users_me(current_user: User = Depends(get_current_user)):
     """
     获取当前用户信息
@@ -318,11 +313,12 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
         current_user: 当前登录用户（由 Depends(get_current_user) 自动注入）
 
     Returns:
-        dict: 当前用户的基本信息
+        ApiResponse: 包含当前用户基本信息的统一响应
     """
-    return {
+    user_info = {
         "id": current_user.id,
         "username": current_user.username,
         "email": current_user.email,
         "is_active": current_user.is_active
     }
+    return success_response(data=user_info, msg="获取用户信息成功")

@@ -23,8 +23,10 @@
 # 导入模型以确保它们在 SQLModel.metadata 中注册
 from app.models.user import User, UserCreate, UserUpdate, UserResponse
 from app.models.item import Item, ItemCreate, ItemUpdate, ItemResponse
+from app.models.response import ApiResponse
 
 __all__ = [
     "User", "UserCreate", "UserUpdate", "UserResponse",
-    "Item", "ItemCreate", "ItemUpdate", "ItemResponse"
+    "Item", "ItemCreate", "ItemUpdate", "ItemResponse",
+    "ApiResponse"
 ]

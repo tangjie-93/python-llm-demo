@@ -13,18 +13,20 @@
 - 更多的查询参数（搜索、排序等）
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlmodel import Session, select
 from typing import List, Optional
 
 from app.core.database import get_session
+from app.core.response import success_response, error_response
 from app.models.item import Item, ItemCreate, ItemUpdate, ItemResponse
+from app.models.response import ApiResponse
 
 # 创建 APIRouter 实例
 router = APIRouter()
 
 
-@router.get("/", response_model=List[ItemResponse])
+@router.get("/", response_model=ApiResponse[List[ItemResponse]])
 def get_items(
     skip: int = 0,
     limit: int = 100,
@@ -45,13 +47,13 @@ def get_items(
         session: 数据库会话
 
     Returns:
-        List[ItemResponse]: 物品列表
+        ApiResponse[List[ItemResponse]]: 包含物品列表的统一响应
     """
     items = session.exec(select(Item).offset(skip).limit(limit)).all()
-    return items
+    return success_response(data=items, msg="获取物品列表成功")
 
 
-@router.get("/{item_id}", response_model=ItemResponse)
+@router.get("/{item_id}", response_model=ApiResponse[ItemResponse])
 def get_item(item_id: int, session: Session = Depends(get_session)):
     """
     获取指定物品
@@ -63,18 +65,18 @@ def get_item(item_id: int, session: Session = Depends(get_session)):
         session: 数据库会话
 
     Returns:
-        ItemResponse: 物品信息
+        ApiResponse[ItemResponse]: 包含物品信息的统一响应
 
     Raises:
         HTTPException 404: 物品不存在
     """
     item = session.get(Item, item_id)
     if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
-    return item
+        return error_response(msg="物品不存在", code=status.HTTP_404_NOT_FOUND)
+    return success_response(data=item, msg="获取物品信息成功")
 
 
-@router.post("/", response_model=ItemResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ApiResponse[ItemResponse])
 def create_item(item: ItemCreate, session: Session = Depends(get_session)):
     """
     创建新物品
@@ -86,16 +88,16 @@ def create_item(item: ItemCreate, session: Session = Depends(get_session)):
         session: 数据库会话
 
     Returns:
-        ItemResponse: 创建成功后的物品信息
+        ApiResponse[ItemResponse]: 包含创建成功后的物品信息的统一响应
     """
     db_item = Item.model_validate(item)
     session.add(db_item)
     session.commit()
     session.refresh(db_item)
-    return db_item
+    return success_response(data=db_item, msg="物品创建成功", code=status.HTTP_201_CREATED)
 
 
-@router.put("/{item_id}", response_model=ItemResponse)
+@router.put("/{item_id}", response_model=ApiResponse[ItemResponse])
 def update_item(item_id: int, item: ItemUpdate, session: Session = Depends(get_session)):
     """
     更新物品
@@ -109,14 +111,14 @@ def update_item(item_id: int, item: ItemUpdate, session: Session = Depends(get_s
         session: 数据库会话
 
     Returns:
-        ItemResponse: 更新后的物品信息
+        ApiResponse[ItemResponse]: 包含更新后的物品信息的统一响应
 
     Raises:
         HTTPException 404: 物品不存在
     """
     db_item = session.get(Item, item_id)
     if not db_item:
-        raise HTTPException(status_code=404, detail="Item not found")
+        return error_response(msg="物品不存在", code=status.HTTP_404_NOT_FOUND)
 
     # 将请求中的非空字段更新到数据库对象
     item_data = item.model_dump(exclude_unset=True)
@@ -126,10 +128,10 @@ def update_item(item_id: int, item: ItemUpdate, session: Session = Depends(get_s
     session.add(db_item)
     session.commit()
     session.refresh(db_item)
-    return db_item
+    return success_response(data=db_item, msg="物品更新成功")
 
 
-@router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{item_id}", response_model=ApiResponse)
 def delete_item(item_id: int, session: Session = Depends(get_session)):
     """
     删除物品
@@ -141,15 +143,15 @@ def delete_item(item_id: int, session: Session = Depends(get_session)):
         session: 数据库会话
 
     Returns:
-        HTTP 204 No Content
+        ApiResponse: 包含删除成功信息的统一响应
 
     Raises:
         HTTPException 404: 物品不存在
     """
     item = session.get(Item, item_id)
     if not item:
-        raise HTTPException(status_code=404, detail="Item not found")
+        return error_response(msg="物品不存在", code=status.HTTP_404_NOT_FOUND)
 
     session.delete(item)
     session.commit()
-    return None
+    return success_response(msg="物品删除成功")

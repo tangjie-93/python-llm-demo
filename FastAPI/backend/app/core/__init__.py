@@ -13,9 +13,14 @@
     - create_db_and_tables(): 创建数据库表
     - get_session(): 获取数据库会话的依赖注入函数
 
+- response.py: 响应工具
+    - success_response(): 成功响应
+    - error_response(): 错误响应
+
 使用方式：
     from app.core.config import settings
     from app.core.database import get_session, engine
+    from app.core.response import success_response, error_response
 """
 
 # 该文件使 core 目录成为一个 Python 包
