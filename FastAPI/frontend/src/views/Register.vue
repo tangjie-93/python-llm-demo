@@ -13,21 +13,30 @@
         :rules="rules"
         label-width="80px"
       >
-        <el-form-item label="用户名" prop="username">
+        <el-form-item
+          label="用户名"
+          prop="username"
+        >
           <el-input 
             v-model="registerForm.username" 
             placeholder="请输入用户名"
           />
         </el-form-item>
         
-        <el-form-item label="邮箱" prop="email">
+        <el-form-item
+          label="邮箱"
+          prop="email"
+        >
           <el-input 
             v-model="registerForm.email" 
             placeholder="请输入邮箱"
           />
         </el-form-item>
         
-        <el-form-item label="密码" prop="password">
+        <el-form-item
+          label="密码"
+          prop="password"
+        >
           <el-input
             v-model="registerForm.password"
             type="password"
@@ -36,7 +45,10 @@
           />
         </el-form-item>
         
-        <el-form-item label="确认密码" prop="confirmPassword">
+        <el-form-item
+          label="确认密码"
+          prop="confirmPassword"
+        >
           <el-input
             v-model="registerForm.confirmPassword"
             type="password"
@@ -57,7 +69,10 @@
         </el-form-item>
         
         <el-form-item>
-          <el-link type="primary" @click="$router.push('/login')">
+          <el-link
+            type="primary"
+            @click="$router.push('/login')"
+          >
             已有账号？去登录
           </el-link>
         </el-form-item>
@@ -67,30 +82,30 @@
 </template>
 
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { ElMessage, FormInstance, FormRules } from 'element-plus'
-import { useAuthStore } from '@/stores/auth'
+import { reactive, ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { ElMessage, FormInstance, FormRules } from 'element-plus';
+import { useAuthStore } from '@/stores/auth';
 
-const router = useRouter()
-const authStore = useAuthStore()
-const formRef = ref<FormInstance>()
-const loading = ref(false)
+const router = useRouter();
+const authStore = useAuthStore();
+const formRef = ref<FormInstance>();
+const loading = ref(false);
 
 const registerForm = reactive({
   username: '',
   email: '',
   password: '',
   confirmPassword: ''
-})
+});
 
 const validateConfirmPassword = (rule: any, value: string, callback: any) => {
   if (value !== registerForm.password) {
-    callback(new Error('两次输入的密码不一致'))
+    callback(new Error('两次输入的密码不一致'));
   } else {
-    callback()
+    callback();
   }
-}
+};
 
 const rules: FormRules = {
   username: [
@@ -109,29 +124,29 @@ const rules: FormRules = {
     { required: true, message: '请再次输入密码', trigger: 'blur' },
     { validator: validateConfirmPassword, trigger: 'blur' }
   ]
-}
+};
 
 async function handleRegister() {
-  if (!formRef.value) return
+  if (!formRef.value) return;
   
   await formRef.value.validate(async (valid) => {
     if (valid) {
-      loading.value = true
+      loading.value = true;
       try {
         await authStore.register(
           registerForm.username,
           registerForm.email,
           registerForm.password
-        )
-        ElMessage.success('注册成功，请登录')
-        router.push('/login')
+        );
+        ElMessage.success('注册成功，请登录');
+        router.push('/login');
       } catch (error: any) {
-        ElMessage.error(error.response?.data?.detail || '注册失败')
+        ElMessage.error(error.response?.data?.detail || '注册失败');
       } finally {
-        loading.value = false
+        loading.value = false;
       }
     }
-  })
+  });
 }
 </script>
 

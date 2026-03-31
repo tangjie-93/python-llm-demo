@@ -1,5 +1,5 @@
-import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
-import { ElMessage } from 'element-plus'
+import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
+import { ElMessage } from 'element-plus';
 
 export interface ApiResponse<T = any> {
   success: boolean
@@ -23,66 +23,66 @@ export interface ApiError {
 const api = axios.create({
   baseURL: '/api',
   timeout: 10000
-})
+});
 
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('token')
+    const token = localStorage.getItem('token');
     if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`
+      config.headers.Authorization = `Bearer ${token}`;
     }
-    return config
+    return config;
   },
   (error: AxiosError) => {
-    return Promise.reject(error)
+    return Promise.reject(error);
   }
-)
+);
 
 api.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
-    return response
+    return response;
   },
   (error: AxiosError<ApiError>) => {
-    const responseData = error.response?.data
+    const responseData = error.response?.data;
     if (error.response?.status === 401) {
        // 登录失败，显示具体错误信息
-      const errorMessage = responseData?.message || responseData?.error || '用户名或密码不正确'
+      const errorMessage = responseData?.message || responseData?.error || '用户名或密码不正确';
       // 检查是否是登录接口的错误
       if (error.config?.url?.includes('/auth/login')) {
         ElMessage.error({
           message: errorMessage,
           duration: 5000 // 5秒
-        })
+        });
       } else {
         // 其他 401 错误，视为登录过期
-        localStorage.removeItem('token')
-        window.location.href = '/login'
+        localStorage.removeItem('token');
+        window.location.href = '/login';
         ElMessage.error({
           message: '登录已过期，请重新登录',
           duration: 5000 // 5秒
-        })
+        });
       }
-      return Promise.reject(error)
+      return Promise.reject(error);
     }
-    return Promise.reject(error)
+    return Promise.reject(error);
   }
-)
+);
 
-export default api
+export default api;
 
 export function getErrorMessage(error: unknown): string {
   if (axios.isAxiosError(error)) {
-    return error.response?.data?.message || error.message
+    return error.response?.data?.message || error.message;
   }
   if (error instanceof Error) {
-    return error.message
+    return error.message;
   }
-  return '未知错误'
+  return '未知错误';
 }
 
 export function getErrorDetails(error: unknown): any {
   if (axios.isAxiosError(error)) {
-    return error.response?.data?.details
+    return error.response?.data?.details;
   }
-  return null
+  return null;
 }

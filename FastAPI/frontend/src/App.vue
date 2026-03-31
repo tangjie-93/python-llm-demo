@@ -1,7 +1,10 @@
 <template>
   <el-config-provider>
     <router-view v-slot="{ Component }">
-      <transition name="fade-slide" mode="out-in">
+      <transition
+        name="fade-slide"
+        mode="out-in"
+      >
         <component :is="Component" />
       </transition>
     </router-view>
@@ -9,7 +12,7 @@
 </template>
 
 <script setup lang="ts">
-import { ElConfigProvider } from 'element-plus'
+import { ElConfigProvider } from 'element-plus';
 </script>
 
 <style>

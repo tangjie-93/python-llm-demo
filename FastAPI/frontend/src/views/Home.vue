@@ -10,8 +10,14 @@
         <p>您好，{{ authStore.userInfo?.username }}！</p>
         <p>这是系统的首页，您可以通过左侧菜单访问不同的功能模块。</p>
         <div class="stats-container">
-          <el-statistic title="用户数量" :value="userCount" />
-          <el-statistic title="项目数量" :value="itemCount" />
+          <el-statistic
+            title="用户数量"
+            :value="userCount"
+          />
+          <el-statistic
+            title="项目数量"
+            :value="itemCount"
+          />
         </div>
       </div>
     </el-card>
@@ -19,19 +25,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
-import { useAuthStore } from '@/stores/auth'
+import { ref, onMounted } from 'vue';
+import { useAuthStore } from '@/stores/auth';
 
-const authStore = useAuthStore()
-const userCount = ref(0)
-const itemCount = ref(0)
+const authStore = useAuthStore();
+const userCount = ref(0);
+const itemCount = ref(0);
 
 onMounted(() => {
-  authStore.fetchUserInfo()
+  authStore.fetchUserInfo();
   // 模拟获取统计数据
-  userCount.value = 10
-  itemCount.value = 20
-})
+  userCount.value = 10;
+  itemCount.value = 20;
+});
 </script>
 
 <style scoped>

@@ -7,7 +7,12 @@
       </div>
       <div class="header-right">
         <span v-if="authStore.userInfo">{{ authStore.userInfo.username }}</span>
-        <el-button type="primary" plain @click="handleLogout" v-if="authStore.isLoggedIn">
+        <el-button
+          v-if="authStore.isLoggedIn"
+          type="primary"
+          plain
+          @click="handleLogout"
+        >
           退出登录
         </el-button>
       </div>
@@ -40,7 +45,10 @@
       <!-- 右侧内容 -->
       <section class="layout-main">
         <router-view v-slot="{ Component }">
-          <transition name="slide-fade" mode="out-in">
+          <transition
+            name="slide-fade"
+            mode="out-in"
+          >
             <component :is="Component" />
           </transition>
         </router-view>
@@ -50,23 +58,23 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { House, User, Goods } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
+import { computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
+import { House, User, Goods } from '@element-plus/icons-vue';
+import { ElMessage } from 'element-plus';
 
-const router = useRouter()
-const authStore = useAuthStore()
+const router = useRouter();
+const authStore = useAuthStore();
 
 // 计算当前激活的菜单
 const activeMenu = computed(() => {
-  return router.currentRoute.value.path
-})
+  return router.currentRoute.value.path;
+});
 
 // 处理菜单选择
 function handleMenuSelect(key: string) {
-  router.push(key)
+  router.push(key);
 }
 
 // 处理退出登录
@@ -74,12 +82,12 @@ function handleLogout() {
   ElMessage.success({
     message: '退出成功',
     duration: 500 // 1.5秒
-  })
+  });
   // 延迟跳转，让用户看到成功提示
   setTimeout(() => {
-    authStore.logout()
-    router.push('/login')
-  }, 500)
+    authStore.logout();
+    router.push('/login');
+  }, 500);
 }
 </script>
 

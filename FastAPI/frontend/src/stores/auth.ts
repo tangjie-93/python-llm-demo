@@ -1,45 +1,45 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import api, { getErrorMessage } from '@/utils/api'
+import { defineStore } from 'pinia';
+import { ref, computed } from 'vue';
+import api, { getErrorMessage } from '@/utils/api';
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref<string | null>(localStorage.getItem('token'))
-  const userInfo = ref<{ id: number; username: string; email: string } | null>(null)
+  const token = ref<string | null>(localStorage.getItem('token'));
+  const userInfo = ref<{ id: number; username: string; email: string } | null>(null);
 
-  const isLoggedIn = computed(() => !!token.value)
+  const isLoggedIn = computed(() => !!token.value);
 
   async function login(username: string, password: string) {
-    const formData = new FormData()
-    formData.append('username', username)
-    formData.append('password', password)
+    const formData = new FormData();
+    formData.append('username', username);
+    formData.append('password', password);
     
-    const response = await api.post('/auth/login', formData)
+    const response = await api.post('/auth/login', formData);
     if (!response.data.access_token) {
-      throw new Error('登录失败，未返回 access_token')
+      throw new Error('登录失败，未返回 access_token');
     }
-    token.value = response.data.access_token
-    localStorage.setItem('token', response.data.access_token)
-    await fetchUserInfo()
+    token.value = response.data.access_token;
+    localStorage.setItem('token', response.data.access_token);
+    await fetchUserInfo();
   }
 
   async function register(username: string, email: string, password: string) {
-    await api.post('/auth/register', { username, email, password })
+    await api.post('/auth/register', { username, email, password });
   }
 
   async function fetchUserInfo() {
-    if (!token.value) return
+    if (!token.value) return;
     try {
-      const response = await api.get('/auth/me')
-      userInfo.value = response.data
+      const response = await api.get('/auth/me');
+      userInfo.value = response.data;
     } catch (error) {
-      console.error('获取用户信息失败:', getErrorMessage(error))
+      console.error('获取用户信息失败:', getErrorMessage(error));
     }
   }
 
   function logout() {
-    token.value = null
-    userInfo.value = null
-    localStorage.removeItem('token')
+    token.value = null;
+    userInfo.value = null;
+    localStorage.removeItem('token');
   }
 
   return {
@@ -51,5 +51,5 @@ export const useAuthStore = defineStore('auth', () => {
     fetchUserInfo,
     logout,
     api
-  }
-})
+  };
+});
