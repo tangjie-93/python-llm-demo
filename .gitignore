@@ -29,3 +29,6 @@ Thumbs.db
 /langchain-demo/docs/*
 /langchain-demo/local_models/*
 /langchain-demo/vector_store/*
+/postgresql-16.3/*
+/postgresql-16.3.tar.gz
+/pgdata/*

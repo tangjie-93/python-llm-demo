@@ -245,7 +245,7 @@ async def login(
         return error_response(msg="用户名或密码错误", code=status.HTTP_401_UNAUTHORIZED)
 
     # 创建访问令牌
-    access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    access_token_expires = timedelta(days=settings.ACCESS_TOKEN_EXPIRE_DAYS)
     access_token = create_access_token(
         data={"sub": user.username},  # sub = subject，通常放用户名
         expires_delta=access_token_expires

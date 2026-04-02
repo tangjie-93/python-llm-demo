@@ -7,7 +7,6 @@
 
 from functools import lru_cache
 from pydantic_settings import BaseSettings
-from typing import Optional
 
 
 class Settings(BaseSettings):
@@ -38,13 +37,12 @@ class Settings(BaseSettings):
     # - sqlite:///./fastapi.db: 相对路径，当前目录下的 fastapi.db
     # - sqlite:////absolute/path: 绝对路径
     # - postgresql://user:pass@localhost/dbname: PostgreSQL
-    DATABASE_URL: str = "sqlite:///./fastapi.db"
+    DATABASE_URL: str = "postgresql://postgres:postgres@localhost/fastapi_db"
 
     # JWT 认证配置
     SECRET_KEY: str = "your-secret-key-change-in-production"
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-
+    ACCESS_TOKEN_EXPIRE_DAYS: int = 1
     # CORS 跨域配置
     # 列出允许访问 API 的前端域名
     CORS_ORIGINS: list[str] = ["http://localhost:5173", "http://localhost:5174", "http://localhost:3000"]
