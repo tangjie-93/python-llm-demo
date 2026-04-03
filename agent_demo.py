@@ -15,12 +15,100 @@ import gradio as gr
 from openai import OpenAI
 import os
 import json
+import ast
 from dotenv import load_dotenv
 from typing import List, Dict, Callable
 from datetime import datetime
 import requests
 import textwrap
 from tavily import TavilyClient
+
+
+class SafeMathEvaluator(ast.NodeVisitor):
+    """安全的数学表达式求值器"""
+    
+    def __init__(self):
+        self.result = None
+    
+    def visit_Expression(self, node):
+        """访问表达式节点"""
+        self._evaluate(node.body)
+        return self.result
+    
+    def visit_BinOp(self, node):
+        """访问二元运算节点"""
+        left = self._evaluate(node.left)
+        right = self._evaluate(node.right)
+        
+        if isinstance(node.op, ast.Add):
+            self.result = left + right
+        elif isinstance(node.op, ast.Sub):
+            self.result = left - right
+        elif isinstance(node.op, ast.Mult):
+            self.result = left * right
+        elif isinstance(node.op, ast.Div):
+            self.result = left / right
+        elif isinstance(node.op, ast.Pow):
+            self.result = left ** right
+        elif isinstance(node.op, ast.Mod):
+            self.result = left % right
+        else:
+            raise ValueError(f"不支持的运算符: {type(node.op).__name__}")
+    
+    def visit_UnaryOp(self, node):
+        """访问一元运算节点"""
+        operand = self._evaluate(node.operand)
+        
+        if isinstance(node.op, ast.UAdd):
+            self.result = +operand
+        elif isinstance(node.op, ast.USub):
+            self.result = -operand
+        else:
+            raise ValueError(f"不支持的一元运算符: {type(node.op).__name__}")
+    
+    def visit_Constant(self, node):
+        """访问常量节点（数字）"""
+        if isinstance(node.value, (int, float)):
+            self.result = node.value
+        else:
+            raise ValueError(f"不支持的常量类型: {type(node.value).__name__}")
+    
+    def _evaluate(self, node):
+        """评估节点"""
+        if isinstance(node, ast.BinOp):
+            self.visit_BinOp(node)
+            return self.result
+        elif isinstance(node, ast.UnaryOp):
+            self.visit_UnaryOp(node)
+            return self.result
+        elif isinstance(node, ast.Constant):
+            self.visit_Constant(node)
+            return self.result
+        elif isinstance(node, ast.Name):
+            raise ValueError(f"不支持的变量: {node.id}")
+        elif isinstance(node, ast.Call):
+            raise ValueError(f"不支持的函数调用: {type(node.func).__name__}")
+        else:
+            raise ValueError(f"不支持的节点类型: {type(node).__name__}")
+
+
+def safe_eval(expression: str) -> float:
+    """安全地计算数学表达式"""
+    try:
+        # 解析表达式为 AST
+        tree = ast.parse(expression, mode='eval')
+        
+        # 验证并求值
+        evaluator = SafeMathEvaluator()
+        result = evaluator.visit(tree)
+        
+        return result
+    except (SyntaxError, ValueError) as e:
+        raise ValueError(f"表达式无效: {str(e)}")
+    except ZeroDivisionError:
+        raise ValueError("除零错误")
+    except Exception as e:
+        raise ValueError(f"计算错误: {str(e)}")
 
 # 加载环境变量
 load_dotenv()
@@ -98,12 +186,10 @@ class Agent:
     def _calculator(self, expression: str) -> str:
         """计算器工具"""
         try:
-            # 安全计算，只允许基本运算符
-            allowed_chars = set('0123456789+-*/(). ')
-            if not all(c in allowed_chars for c in expression):
-                return "错误：表达式包含非法字符"
-            result = eval(expression)
+            result = safe_eval(expression)
             return f"计算结果: {result}"
+        except ValueError as e:
+            return f"错误: {str(e)}"
         except Exception as e:
             return f"计算错误: {str(e)}"
     
