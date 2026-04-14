@@ -1,7 +1,8 @@
----
+***
+
 name: "vue-project-structure"
 description: "定义Vue项目目录结构和组织标准。当搭建新Vue项目或重组现有项目结构时触发此技能。"
----
+---------------------------------------------------------
 
 # 项目结构说明
 
@@ -448,14 +449,14 @@ style/
 
 ### 2. 文件命名
 
-| 文件类型 | 命名规范 | 示例 |
-|---------|---------|------|
-| 组件文件 | 小驼峰 | `userCard.vue`, `orderList.vue` |
+| 文件类型    | 命名规范         | 示例                              |
+| ------- | ------------ | ------------------------------- |
+| 组件文件    | 小驼峰          | `userCard.vue`, `orderList.vue` |
 | Hook 文件 | 小驼峰 + use 前缀 | `useUser.ts`, `useOrderHook.ts` |
-| 工具文件 | 小驼峰 | `domUtil.ts`, `storage.ts` |
-| 类型文件 | 小驼峰 | `user.ts`, `order.ts` |
-| 样式文件 | 小驼峰 | `global.less`, `variables.less` |
-| 配置文件 | 小驼峰 | `defaultSettings.ts` |
+| 工具文件    | 小驼峰          | `domUtil.ts`, `storage.ts`      |
+| 类型文件    | 小驼峰          | `user.ts`, `order.ts`           |
+| 样式文件    | 小驼峰          | `global.less`, `variables.less` |
+| 配置文件    | 小驼峰          | `defaultSettings.ts`            |
 
 ### 3. 特殊文件
 
@@ -514,3 +515,4 @@ import type { UserInfo } from '@/types/user';
 - [ ] `src/assets/` - 静态资源目录
 - [ ] `src/config/` - 配置文件目录
 - [ ] `mock/` - Mock 数据目录
+

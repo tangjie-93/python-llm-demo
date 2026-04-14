@@ -6,7 +6,7 @@
 """
 
 from fastapi import FastAPI
-from app.routers import users, items, auth
+from app.routers import users, items, auth, posts
 
 
 def setup_routers(app: FastAPI):
@@ -38,6 +38,14 @@ def setup_routers(app: FastAPI):
         # - POST   /api/auth/token   用户登录
         # - POST   /api/auth/register 用户注册
         # - GET    /api/auth/me      获取当前用户信息
+        #
+        # - GET    /api/posts/       获取文章列表
+        # - POST   /api/posts/       创建文章
+        # - GET    /api/posts/{id}   获取文章详情
+        # - PATCH  /api/posts/{id}   更新文章
+        # - DELETE /api/posts/{id}   删除文章
+        # - GET    /api/posts/tags/  获取标签列表
+        # - POST   /api/posts/tags/  创建标签
     """
     # 用户管理路由
     # /api/users
@@ -50,3 +58,7 @@ def setup_routers(app: FastAPI):
     # 认证路由
     # /api/auth
     app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+
+    # 博客文章路由
+    # /api/posts
+    app.include_router(posts.router, prefix="/api")

@@ -9,12 +9,12 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/Login.vue')
+    component: () => import('@/views/auth/index.vue')
   },
   {
     path: '/register',
     name: 'Register',
-    component: () => import('@/views/Register.vue')
+    component: () => import('@/views/auth/register.vue')
   },
   {
     path: '/',
@@ -24,17 +24,27 @@ const routes: RouteRecordRaw[] = [
       {
         path: 'home',
         name: 'Home',
-        component: () => import('@/views/Home.vue')
+        component: () => import('@/views/home/index.vue')
       },
       {
         path: 'users',
         name: 'Users',
-        component: () => import('@/views/Users.vue')
+        component: () => import('@/views/users/index.vue')
       },
       {
         path: 'items',
         name: 'Items',
-        component: () => import('@/views/Items.vue')
+        component: () => import('@/views/items/index.vue')
+      },
+      {
+        path: 'posts',
+        name: 'Posts',
+        component: () => import('@/views/posts/index.vue')
+      },
+      {
+        path: 'tags',
+        name: 'Tags',
+        component: () => import('@/views/tags/index.vue')
       }
     ]
   }
@@ -45,7 +55,7 @@ const router = createRouter({
   routes
 });
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token');
   if (to.meta.requiresAuth && !token) {
     next('/login');

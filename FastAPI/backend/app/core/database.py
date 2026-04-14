@@ -11,6 +11,7 @@ from app.core.config import settings
 # 手动导入模型以确保它们被注册
 from app.models.user import User
 from app.models.item import Item
+from app.models.post import Post, Tag, PostTagLink
 
 # 打印数据库连接信息
 print(f"Creating engine with DATABASE_URL: {settings.DATABASE_URL}")

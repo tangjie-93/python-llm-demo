@@ -6,12 +6,16 @@
 - UserCreate: 用户创建请求模型
 - UserUpdate: 用户更新请求模型
 - UserResponse: 用户响应模型
+- UserWithPosts: 包含文章列表的用户响应模型
 
 使用 SQLModel 结合了 Pydantic 和 SQLAlchemy 的功能。
 """
 
-from typing import Optional
-from sqlmodel import SQLModel, Field
+from typing import Optional, List, TYPE_CHECKING
+from sqlmodel import SQLModel, Field, Relationship
+
+if TYPE_CHECKING:
+    from app.models.post import Post
 
 
 class User(SQLModel, table=True):
@@ -29,6 +33,9 @@ class User(SQLModel, table=True):
     - is_active: 账户是否激活（默认 True）
     - is_superuser: 是否超级管理员（默认 False）
 
+    关系：
+    - posts: 一对多关系，关联到 Post 模型
+
     Attributes:
         id: 用户 ID
         username: 用户名
@@ -37,6 +44,7 @@ class User(SQLModel, table=True):
         full_name: 真实姓名
         is_active: 是否激活
         is_superuser: 是否超级管理员
+        posts: 用户的文章列表
 
     Note:
         - table=True 表示这是一个数据库表模型
@@ -51,6 +59,9 @@ class User(SQLModel, table=True):
     full_name: Optional[str] = None
     is_active: bool = Field(default=True)
     is_superuser: bool = Field(default=False)
+
+    # 一对多关系：一个用户可以有多篇文章
+    posts: List["Post"] = Relationship(back_populates="author")
 
 
 class UserCreate(SQLModel):
@@ -124,3 +135,15 @@ class UserResponse(SQLModel):
             这样可以直接从数据库对象序列化到响应模型。
         """
         from_attributes = True
+
+
+class UserWithPosts(UserResponse):
+    """
+    包含文章列表的用户响应模型
+
+    用于获取用户详情时，同时返回该用户的所有文章。
+
+    Attributes:
+        posts: 该用户的文章列表（简化信息）
+    """
+    posts: List["PostSimpleResponse"] = []
