@@ -3,21 +3,18 @@ import { ElMessage } from 'element-plus';
 
 export interface ApiResponse<T = any> {
   success: boolean
+  message: string
   data?: T
   error?: string
-  message?: string
   details?: any
-  traceback?: string
-  status_code?: number
 }
 
 export interface ApiError {
   success: false
-  error: string
   message: string
+  error?: string
   details?: any
-  traceback?: string
-  status_code?: number
+  data?: any
 }
 
 const api = axios.create({
@@ -40,6 +37,10 @@ api.interceptors.request.use(
 
 api.interceptors.response.use(
   (response: AxiosResponse<ApiResponse>) => {
+    // 自动解包响应数据
+    if (response.data && 'data' in response.data) {
+      response.data = response.data.data;
+    }
     return response;
   },
   (error: AxiosError<ApiError>) => {

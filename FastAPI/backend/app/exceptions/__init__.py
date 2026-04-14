@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 from fastapi.exceptions import RequestValidationError
 from fastapi import HTTPException
 from pydantic import ValidationError
+from app.core.response import error_response
 
 
 def setup_exception_handlers(app: FastAPI):
@@ -57,12 +58,10 @@ def setup_exception_handlers(app: FastAPI):
         """
         return JSONResponse(
             status_code=exc.status_code,
-            content={
-                "success": False,
-                "error": "HTTP Error",
-                "message": exc.detail,
-                "status_code": exc.status_code,
-            }
+            content=error_response(
+                message=exc.detail,
+                error=exc.__class__.__name__
+            ).model_dump()
         )
 
     @app.exception_handler(RequestValidationError)
@@ -82,12 +81,11 @@ def setup_exception_handlers(app: FastAPI):
         """
         return JSONResponse(
             status_code=422,
-            content={
-                "success": False,
-                "error": "Validation Error",
-                "message": "请求参数验证失败",
-                "details": exc.errors(),
-            }
+            content=error_response(
+                message="请求参数验证失败",
+                error="ValidationError",
+                details=exc.errors()
+            ).model_dump()
         )
 
     @app.exception_handler(ValidationError)
@@ -107,12 +105,11 @@ def setup_exception_handlers(app: FastAPI):
         """
         return JSONResponse(
             status_code=422,
-            content={
-                "success": False,
-                "error": "Validation Error",
-                "message": "数据验证失败",
-                "details": exc.errors(),
-            }
+            content=error_response(
+                message="数据验证失败",
+                error="ValidationError",
+                details=exc.errors()
+            ).model_dump()
         )
 
     @app.exception_handler(Exception)
@@ -135,15 +132,17 @@ def setup_exception_handlers(app: FastAPI):
             - 调试模式下会返回详细信息，便于开发调试
         """
         import traceback
+        details = {
+            "error_message": str(exc) if app.debug else "请联系管理员"
+        }
+        if app.debug:
+            details["traceback"] = traceback.format_exc()
+        
         return JSONResponse(
             status_code=500,
-            content={
-                "success": False,
-                "error": "Internal Server Error",
-                "message": "服务器内部错误",
-                # 调试模式下返回详细信息，生产环境只返回通用消息
-                "details": str(exc) if app.debug else "请联系管理员",
-                # 仅在调试模式下返回堆栈跟踪
-                "traceback": traceback.format_exc() if app.debug else None,
-            }
+            content=error_response(
+                message="服务器内部错误",
+                error="InternalServerError",
+                details=details
+            ).model_dump()
         )

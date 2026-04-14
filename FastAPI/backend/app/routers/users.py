@@ -42,7 +42,7 @@ def get_users(session: Session = Depends(get_session)):
         ApiResponse[List[UserResponse]]: 包含用户列表的统一响应
     """
     users = session.exec(select(User)).all()
-    return success_response(data=users, msg="获取用户列表成功")
+    return success_response(data=users, message="获取用户列表成功")
 
 
 @router.get("/{user_id}", response_model=ApiResponse[UserResponse])
@@ -64,7 +64,7 @@ def get_user(user_id: int, session: Session = Depends(get_session)):
     """
     user = session.get(User, user_id)
     if not user:
-        return error_response(msg="用户不存在", code=status.HTTP_404_NOT_FOUND)
+        return error_response(message="用户不存在", error="NotFound")
     return success_response(data=user, msg="获取用户信息成功")
 
 
@@ -92,9 +92,9 @@ def create_user(user: UserCreate, session: Session = Depends(get_session)):
 
     if existing_user:
         if existing_user.username == user.username:
-            return error_response(msg="用户名已存在", code=status.HTTP_400_BAD_REQUEST)
+            return error_response(message="用户名已存在", error="Conflict")
         else:
-            return error_response(msg="邮箱已存在", code=status.HTTP_400_BAD_REQUEST)
+            return error_response(message="邮箱已存在", error="Conflict")
 
     # Hash the password before creating the user
     hashed_password = get_password_hash(user.password)
@@ -108,7 +108,7 @@ def create_user(user: UserCreate, session: Session = Depends(get_session)):
     session.add(db_user)
     session.commit()
     session.refresh(db_user)
-    return success_response(data=db_user, msg="用户创建成功", code=status.HTTP_201_CREATED)
+    return success_response(data=db_user, message="用户创建成功")
 
 
 @router.put("/{user_id}", response_model=ApiResponse[UserResponse])
@@ -132,7 +132,7 @@ def update_user(user_id: int, user: UserUpdate, session: Session = Depends(get_s
     """
     db_user = session.get(User, user_id)
     if not db_user:
-        return error_response(msg="用户不存在", code=status.HTTP_404_NOT_FOUND)
+        return error_response(message="用户不存在", error="NotFound")
 
     # 将请求中的非空字段更新到数据库对象
     user_data = user.model_dump(exclude_unset=True)
@@ -147,7 +147,7 @@ def update_user(user_id: int, user: UserUpdate, session: Session = Depends(get_s
     session.add(db_user)
     session.commit()
     session.refresh(db_user)
-    return success_response(data=db_user, msg="用户更新成功")
+    return success_response(data=db_user, message="用户更新成功")
 
 
 @router.delete("/{user_id}", response_model=ApiResponse)
@@ -169,8 +169,8 @@ def delete_user(user_id: int, session: Session = Depends(get_session)):
     """
     user = session.get(User, user_id)
     if not user:
-        return error_response(msg="用户不存在", code=status.HTTP_404_NOT_FOUND)
+        return error_response(message="用户不存在", error="NotFound")
 
     session.delete(user)
     session.commit()
-    return success_response(msg="用户删除成功")
+    return success_response(message="用户删除成功")

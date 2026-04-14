@@ -50,7 +50,7 @@ def get_items(
         ApiResponse[List[ItemResponse]]: 包含物品列表的统一响应
     """
     items = session.exec(select(Item).offset(skip).limit(limit)).all()
-    return success_response(data=items, msg="获取物品列表成功")
+    return success_response(data=items, message="获取物品列表成功")
 
 
 @router.get("/{item_id}", response_model=ApiResponse[ItemResponse])
@@ -72,8 +72,8 @@ def get_item(item_id: int, session: Session = Depends(get_session)):
     """
     item = session.get(Item, item_id)
     if not item:
-        return error_response(msg="物品不存在", code=status.HTTP_404_NOT_FOUND)
-    return success_response(data=item, msg="获取物品信息成功")
+        return error_response(message="物品不存在", error="NotFound")
+    return success_response(data=item, message="获取物品信息成功")
 
 
 @router.post("/", response_model=ApiResponse[ItemResponse])
@@ -94,7 +94,7 @@ def create_item(item: ItemCreate, session: Session = Depends(get_session)):
     session.add(db_item)
     session.commit()
     session.refresh(db_item)
-    return success_response(data=db_item, msg="物品创建成功", code=status.HTTP_201_CREATED)
+    return success_response(data=db_item, message="物品创建成功")
 
 
 @router.put("/{item_id}", response_model=ApiResponse[ItemResponse])
@@ -118,7 +118,7 @@ def update_item(item_id: int, item: ItemUpdate, session: Session = Depends(get_s
     """
     db_item = session.get(Item, item_id)
     if not db_item:
-        return error_response(msg="物品不存在", code=status.HTTP_404_NOT_FOUND)
+        return error_response(message="物品不存在", error="NotFound")
 
     # 将请求中的非空字段更新到数据库对象
     item_data = item.model_dump(exclude_unset=True)
@@ -128,7 +128,7 @@ def update_item(item_id: int, item: ItemUpdate, session: Session = Depends(get_s
     session.add(db_item)
     session.commit()
     session.refresh(db_item)
-    return success_response(data=db_item, msg="物品更新成功")
+    return success_response(data=db_item, message="物品更新成功")
 
 
 @router.delete("/{item_id}", response_model=ApiResponse)
@@ -150,8 +150,8 @@ def delete_item(item_id: int, session: Session = Depends(get_session)):
     """
     item = session.get(Item, item_id)
     if not item:
-        return error_response(msg="物品不存在", code=status.HTTP_404_NOT_FOUND)
+        return error_response(message="物品不存在", error="NotFound")
 
     session.delete(item)
     session.commit()
-    return success_response(msg="物品删除成功")
+    return success_response(message="物品删除成功")

@@ -12,7 +12,7 @@
 from datetime import datetime, timedelta, timezone
 from typing import Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, status, HTTPException
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -242,7 +242,7 @@ async def login(
 
     # 验证用户是否存在且密码正确
     if not user or not verify_password(form_data.password, user.hashed_password):
-        return error_response(msg="用户名或密码错误", code=status.HTTP_401_UNAUTHORIZED)
+        return error_response(message="用户名或密码错误", error="Unauthorized")
 
     # 创建访问令牌
     access_token_expires = timedelta(days=settings.ACCESS_TOKEN_EXPIRE_DAYS)
@@ -252,7 +252,7 @@ async def login(
     )
 
     # 返回令牌
-    return success_response(data={"access_token": access_token, "token_type": "bearer"}, msg="登录成功")
+    return success_response(data={"access_token": access_token, "token_type": "bearer"}, message="登录成功")
 
 
 @router.post("/register", response_model=ApiResponse)
@@ -281,7 +281,7 @@ async def register(
     ).first()
 
     if existing_user:
-        return error_response(msg="用户名或邮箱已存在", code=status.HTTP_400_BAD_REQUEST)
+        return error_response(message="用户名或邮箱已存在", error="Conflict")
 
     # 加密密码
     hashed_password = get_password_hash(user_data.password)
@@ -299,7 +299,7 @@ async def register(
     session.commit()
     session.refresh(new_user)
 
-    return success_response(data={"user_id": new_user.id}, msg="用户注册成功", code=status.HTTP_201_CREATED)
+    return success_response(data={"user_id": new_user.id}, message="用户注册成功")
 
 
 @router.get("/me", response_model=ApiResponse)
@@ -321,4 +321,4 @@ async def read_users_me(current_user: User = Depends(get_current_user)):
         "email": current_user.email,
         "is_active": current_user.is_active
     }
-    return success_response(data=user_info, msg="获取用户信息成功")
+    return success_response(data=user_info, message="获取用户信息成功")
