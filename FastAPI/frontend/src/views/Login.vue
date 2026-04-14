@@ -111,7 +111,7 @@ async function handleLogin() {
 }
 </script>
 
-<style scoped>
+<style scoped lang="less">
 .login-container {
   display: flex;
   justify-content: center;
