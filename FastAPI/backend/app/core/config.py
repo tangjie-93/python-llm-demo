@@ -37,7 +37,8 @@ class Settings(BaseSettings):
     # - sqlite:///./fastapi.db: 相对路径，当前目录下的 fastapi.db
     # - sqlite:////absolute/path: 绝对路径
     # - postgresql://user:pass@localhost/dbname: PostgreSQL
-    DATABASE_URL: str = "sqlite:///./fastapi.db"
+    # - postgresql+psycopg://user:pass@localhost/dbname: PostgreSQL with psycopg
+    DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@localhost:5432/fastapi_db"
 
     # JWT 认证配置
     SECRET_KEY: str = "your-secret-key-change-in-production"

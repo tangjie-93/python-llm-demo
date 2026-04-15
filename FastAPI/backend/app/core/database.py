@@ -20,6 +20,7 @@ print(f"Creating engine with DATABASE_URL: {settings.DATABASE_URL}")
 # 参数说明：
 # - DATABASE_URL: 数据库连接字符串
 #   - sqlite:///./fastapi.db: 相对路径，数据库文件在当前目录
+#   - postgresql+psycopg://user:pass@localhost/dbname: PostgreSQL
 #   - echo: 是否打印 SQL 语句（调试时很有用）
 #   - connect_args: 特定数据库的连接参数
 #     - check_same_thread: SQLite 特有，用于多线程访问

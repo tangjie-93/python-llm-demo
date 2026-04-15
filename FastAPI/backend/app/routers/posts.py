@@ -16,19 +16,21 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlmodel import Session, select
 
 from app.core.database import get_session
+from app.core.response import success_response, error_response
 from app.models.post import (
     Post, PostCreate, PostUpdate, PostResponse, PostSimpleResponse,
     Tag, TagCreate, TagUpdate, TagResponse, TagWithPosts,
     UserSimpleResponse
 )
 from app.models.user import User
+from app.models.response import ApiResponse
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
 
 # ==================== 文章相关 API ====================
 
-@router.get("/", response_model=List[PostSimpleResponse])
+@router.get("/", response_model=ApiResponse[List[PostSimpleResponse]])
 def list_posts(
     skip: int = Query(default=0, ge=0, description="跳过的记录数"),
     limit: int = Query(default=10, ge=1, le=100, description="返回的记录数"),
@@ -62,10 +64,10 @@ def list_posts(
     query = query.offset(skip).limit(limit)
 
     posts = session.exec(query).all()
-    return posts
+    return success_response(data=posts, message="获取文章列表成功")
 
 
-@router.get("/{post_id}", response_model=PostResponse)
+@router.get("/{post_id}", response_model=ApiResponse[PostResponse])
 def get_post(
     post_id: int,
     session: Session = Depends(get_session)
@@ -78,20 +80,17 @@ def get_post(
     """
     post = session.get(Post, post_id)
     if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"文章 ID {post_id} 不存在"
-        )
+        return error_response(message="文章不存在", error="NotFound")
 
     # 增加浏览次数
     post.view_count += 1
     session.add(post)
     session.commit()
 
-    return post
+    return success_response(data=post, message="获取文章详情成功")
 
 
-@router.post("/", response_model=PostResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/", response_model=ApiResponse[PostResponse], status_code=status.HTTP_201_CREATED)
 def create_post(
     post_data: PostCreate,
     author_id: int,  # 实际项目中应该从 JWT Token 中获取
@@ -105,10 +104,7 @@ def create_post(
     # 验证作者是否存在
     author = session.get(User, author_id)
     if not author:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"作者 ID {author_id} 不存在"
-        )
+        return error_response(message="作者不存在", error="NotFound")
 
     # 创建文章
     post = Post(
@@ -131,10 +127,10 @@ def create_post(
         session.commit()
         session.refresh(post)
 
-    return post
+    return success_response(data=post, message="文章创建成功")
 
 
-@router.patch("/{post_id}", response_model=PostResponse)
+@router.patch("/{post_id}", response_model=ApiResponse[PostResponse])
 def update_post(
     post_id: int,
     post_data: PostUpdate,
@@ -148,10 +144,7 @@ def update_post(
     """
     post = session.get(Post, post_id)
     if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"文章 ID {post_id} 不存在"
-        )
+        return error_response(message="文章不存在", error="NotFound")
 
     # 更新基本字段
     update_data = post_data.model_dump(exclude_unset=True, exclude={"tag_ids"})
@@ -173,10 +166,10 @@ def update_post(
     session.commit()
     session.refresh(post)
 
-    return post
+    return success_response(data=post, message="文章更新成功")
 
 
-@router.delete("/{post_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{post_id}", response_model=ApiResponse)
 def delete_post(
     post_id: int,
     session: Session = Depends(get_session)
@@ -188,18 +181,15 @@ def delete_post(
     """
     post = session.get(Post, post_id)
     if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"文章 ID {post_id} 不存在"
-        )
+        return error_response(message="文章不存在", error="NotFound")
 
     session.delete(post)
     session.commit()
 
-    return None
+    return success_response(message="文章删除成功")
 
 
-@router.post("/{post_id}/publish", response_model=PostResponse)
+@router.post("/{post_id}/publish", response_model=ApiResponse[PostResponse])
 def publish_post(
     post_id: int,
     session: Session = Depends(get_session)
@@ -211,10 +201,7 @@ def publish_post(
     """
     post = session.get(Post, post_id)
     if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"文章 ID {post_id} 不存在"
-        )
+        return error_response(message="文章不存在", error="NotFound")
 
     post.is_published = True
     post.updated_at = datetime.now()
@@ -222,10 +209,10 @@ def publish_post(
     session.commit()
     session.refresh(post)
 
-    return post
+    return success_response(data=post, message="文章发布成功")
 
 
-@router.post("/{post_id}/unpublish", response_model=PostResponse)
+@router.post("/{post_id}/unpublish", response_model=ApiResponse[PostResponse])
 def unpublish_post(
     post_id: int,
     session: Session = Depends(get_session)
@@ -237,10 +224,7 @@ def unpublish_post(
     """
     post = session.get(Post, post_id)
     if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"文章 ID {post_id} 不存在"
-        )
+        return error_response(message="文章不存在", error="NotFound")
 
     post.is_published = False
     post.updated_at = datetime.now()
@@ -248,12 +232,12 @@ def unpublish_post(
     session.commit()
     session.refresh(post)
 
-    return post
+    return success_response(data=post, message="文章已取消发布")
 
 
 # ==================== 标签相关 API ====================
 
-@router.get("/tags/", response_model=List[TagResponse])
+@router.get("/tags/", response_model=ApiResponse[List[TagResponse]])
 def list_tags(
     skip: int = Query(default=0, ge=0),
     limit: int = Query(default=100, ge=1, le=1000),
@@ -263,10 +247,10 @@ def list_tags(
     获取标签列表
     """
     tags = session.exec(select(Tag).offset(skip).limit(limit)).all()
-    return tags
+    return success_response(data=tags, message="获取标签列表成功")
 
 
-@router.get("/tags/{tag_id}", response_model=TagWithPosts)
+@router.get("/tags/{tag_id}", response_model=ApiResponse[TagWithPosts])
 def get_tag(
     tag_id: int,
     session: Session = Depends(get_session)
@@ -278,15 +262,12 @@ def get_tag(
     """
     tag = session.get(Tag, tag_id)
     if not tag:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"标签 ID {tag_id} 不存在"
-        )
+        return error_response(message="标签不存在", error="NotFound")
 
-    return tag
+    return success_response(data=tag, message="获取标签详情成功")
 
 
-@router.post("/tags/", response_model=TagResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/tags/", response_model=ApiResponse[TagResponse], status_code=status.HTTP_201_CREATED)
 def create_tag(
     tag_data: TagCreate,
     session: Session = Depends(get_session)
@@ -299,20 +280,17 @@ def create_tag(
     # 检查标签名是否已存在
     existing_tag = session.exec(select(Tag).where(Tag.name == tag_data.name)).first()
     if existing_tag:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"标签 '{tag_data.name}' 已存在"
-        )
+        return error_response(message=f"标签 '{tag_data.name}' 已存在", error="Conflict")
 
     tag = Tag(**tag_data.model_dump())
     session.add(tag)
     session.commit()
     session.refresh(tag)
 
-    return tag
+    return success_response(data=tag, message="标签创建成功")
 
 
-@router.patch("/tags/{tag_id}", response_model=TagResponse)
+@router.patch("/tags/{tag_id}", response_model=ApiResponse[TagResponse])
 def update_tag(
     tag_id: int,
     tag_data: TagUpdate,
@@ -323,19 +301,13 @@ def update_tag(
     """
     tag = session.get(Tag, tag_id)
     if not tag:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"标签 ID {tag_id} 不存在"
-        )
+        return error_response(message="标签不存在", error="NotFound")
 
     # 如果更新名称，检查是否与其他标签冲突
     if tag_data.name and tag_data.name != tag.name:
         existing_tag = session.exec(select(Tag).where(Tag.name == tag_data.name)).first()
         if existing_tag:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"标签 '{tag_data.name}' 已存在"
-            )
+            return error_response(message=f"标签 '{tag_data.name}' 已存在", error="Conflict")
 
     update_data = tag_data.model_dump(exclude_unset=True)
     for key, value in update_data.items():
@@ -345,10 +317,10 @@ def update_tag(
     session.commit()
     session.refresh(tag)
 
-    return tag
+    return success_response(data=tag, message="标签更新成功")
 
 
-@router.delete("/tags/{tag_id}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/tags/{tag_id}", response_model=ApiResponse)
 def delete_tag(
     tag_id: int,
     session: Session = Depends(get_session)
@@ -360,20 +332,17 @@ def delete_tag(
     """
     tag = session.get(Tag, tag_id)
     if not tag:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"标签 ID {tag_id} 不存在"
-        )
+        return error_response(message="标签不存在", error="NotFound")
 
     session.delete(tag)
     session.commit()
 
-    return None
+    return success_response(message="标签删除成功")
 
 
 # ==================== 文章标签管理 API ====================
 
-@router.post("/{post_id}/tags/{tag_id}", response_model=PostResponse)
+@router.post("/{post_id}/tags/{tag_id}", response_model=ApiResponse[PostResponse])
 def add_tag_to_post(
     post_id: int,
     tag_id: int,
@@ -384,24 +353,15 @@ def add_tag_to_post(
     """
     post = session.get(Post, post_id)
     if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"文章 ID {post_id} 不存在"
-        )
+        return error_response(message="文章不存在", error="NotFound")
 
     tag = session.get(Tag, tag_id)
     if not tag:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"标签 ID {tag_id} 不存在"
-        )
+        return error_response(message="标签不存在", error="NotFound")
 
     # 检查标签是否已关联
     if tag in post.tags:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"文章已包含标签 '{tag.name}'"
-        )
+        return error_response(message=f"文章已包含标签 '{tag.name}'", error="Conflict")
 
     post.tags.append(tag)
     post.updated_at = datetime.now()
@@ -409,10 +369,10 @@ def add_tag_to_post(
     session.commit()
     session.refresh(post)
 
-    return post
+    return success_response(data=post, message="标签添加成功")
 
 
-@router.delete("/{post_id}/tags/{tag_id}", response_model=PostResponse)
+@router.delete("/{post_id}/tags/{tag_id}", response_model=ApiResponse[PostResponse])
 def remove_tag_from_post(
     post_id: int,
     tag_id: int,
@@ -423,24 +383,15 @@ def remove_tag_from_post(
     """
     post = session.get(Post, post_id)
     if not post:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"文章 ID {post_id} 不存在"
-        )
+        return error_response(message="文章不存在", error="NotFound")
 
     tag = session.get(Tag, tag_id)
     if not tag:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"标签 ID {tag_id} 不存在"
-        )
+        return error_response(message="标签不存在", error="NotFound")
 
     # 检查标签是否已关联
     if tag not in post.tags:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"文章不包含标签 '{tag.name}'"
-        )
+        return error_response(message=f"文章不包含标签 '{tag.name}'", error="Conflict")
 
     post.tags.remove(tag)
     post.updated_at = datetime.now()
@@ -448,4 +399,4 @@ def remove_tag_from_post(
     session.commit()
     session.refresh(post)
 
-    return post
+    return success_response(data=post, message="标签移除成功")

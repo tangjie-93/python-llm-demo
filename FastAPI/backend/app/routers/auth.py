@@ -210,7 +210,7 @@ async def get_current_user(
 
 # ==================== 路由端点 ====================
 
-@router.post("/login", response_model=ApiResponse[Token])
+@router.post("/login")
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     session: Session = Depends(get_session)
@@ -240,9 +240,21 @@ async def login(
     # 根据用户名查找用户
     user = session.exec(select(User).where(User.username == form_data.username)).first()
 
-    # 验证用户是否存在且密码正确
-    if not user or not verify_password(form_data.password, user.hashed_password):
-        return error_response(message="用户名或密码错误", error="Unauthorized")
+    # 验证用户是否存在
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户不存在,请先注册",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # 验证密码是否正确
+    if not verify_password(form_data.password, user.hashed_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="密码错误",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
     # 创建访问令牌
     access_token_expires = timedelta(days=settings.ACCESS_TOKEN_EXPIRE_DAYS)

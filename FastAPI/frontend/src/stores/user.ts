@@ -22,8 +22,8 @@ export const useUserStore = defineStore('user', () => {
   async function fetchUsers() {
     loading.value = true;
     try {
-      const response = await api.get<User[]>('/users/');
-      users.value = response.data;
+      const data = await api.get<User[]>('/users/');
+      users.value = data;
     } catch (error) {
       console.error('获取用户列表失败:', getErrorMessage(error));
       throw error;
@@ -35,9 +35,9 @@ export const useUserStore = defineStore('user', () => {
   async function getUser(id: number) {
     loading.value = true;
     try {
-      const response = await api.get<User>(`/users/${id}/`);
-      currentUser.value = response.data;
-      return response.data;
+      const data = await api.get<User>(`/users/${id}/`);
+      currentUser.value = data;
+      return data;
     } catch (error) {
       console.error('获取用户失败:', getErrorMessage(error));
       throw error;
@@ -48,9 +48,9 @@ export const useUserStore = defineStore('user', () => {
 
   async function createUser(userData: UserCreate) {
     try {
-      const response = await api.post<User>('/users/', userData);
-      users.value.push(response.data);
-      return response.data;
+      const data = await api.post<User>('/users/', userData);
+      users.value.push(data);
+      return data;
     } catch (error) {
       console.error('创建用户失败:', getErrorMessage(error));
       throw error;
@@ -59,12 +59,12 @@ export const useUserStore = defineStore('user', () => {
 
   async function updateUser(id: number, userData: Partial<User>) {
     try {
-      const response = await api.put<User>(`/users/${id}/`, userData);
+      const data = await api.put<User>(`/users/${id}/`, userData);
       const index = users.value.findIndex(u => u.id === id);
       if (index !== -1) {
-        users.value[index] = response.data;
+        users.value[index] = data;
       }
-      return response.data;
+      return data;
     } catch (error) {
       console.error('更新用户失败:', getErrorMessage(error));
       throw error;

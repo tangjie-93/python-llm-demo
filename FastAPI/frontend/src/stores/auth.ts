@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import api, { getErrorMessage } from '@/utils/api';
+import { LoginResponse } from '@/types/auth';
 
 export const useAuthStore = defineStore('auth', () => {
   const token = ref<string | null>(localStorage.getItem('token'));
@@ -12,13 +13,15 @@ export const useAuthStore = defineStore('auth', () => {
     const formData = new FormData();
     formData.append('username', username);
     formData.append('password', password);
-    
-    const response = await api.post('/auth/login', formData);
-    if (!response.data.access_token) {
-      throw new Error('登录失败，未返回 access_token');
+
+    const data = await api.post<LoginResponse>('/auth/login', formData);
+
+    if (!data?.access_token) {
+      throw new Error('登录失败');
     }
-    token.value = response.data.access_token;
-    localStorage.setItem('token', response.data.access_token);
+
+    token.value = data.access_token;
+    localStorage.setItem('token', data.access_token);
     await fetchUserInfo();
   }
 
@@ -29,8 +32,8 @@ export const useAuthStore = defineStore('auth', () => {
   async function fetchUserInfo() {
     if (!token.value) return;
     try {
-      const response = await api.get('/auth/me');
-      userInfo.value = response.data;
+      const data = await api.get('/auth/me');
+      userInfo.value = data;
     } catch (error) {
       console.error('获取用户信息失败:', getErrorMessage(error));
     }

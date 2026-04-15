@@ -60,7 +60,7 @@
             <el-link
               type="primary"
               class="register-link"
-              @click="$router.push('/register')"
+              @click="goToRegister"
             >
               立即注册
             </el-link>
@@ -113,13 +113,16 @@ async function handleLogin() {
           router.push('/home');
         }, 500);
       } catch (error: any) {
-        debugger;
-        ElMessage.error(error.message);
+        ElMessage.error(error.message||error||'登录失败');
       } finally {
         loading.value = false;
       }
     }
   });
+}
+
+function goToRegister() {
+  router.push('/register');
 }
 </script>
 
