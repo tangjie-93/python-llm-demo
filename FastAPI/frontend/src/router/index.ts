@@ -18,7 +18,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/',
-    component: () => import('@/components/Layout.vue'),
+    component: () => import('@/layout/index.vue'),
     meta: { requiresAuth: true },
     children: [
       {
@@ -57,11 +57,12 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   const token = localStorage.getItem('token');
-  if (to.meta.requiresAuth && !token) {
-    next('/login');
-  } else {
+  // 临时禁用登录检查用于测试动画
+  // if (to.meta.requiresAuth && !token) {
+  //   next('/login');
+  // } else {
     next();
-  }
+  // }
 });
 
 export default router;

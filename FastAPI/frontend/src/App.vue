@@ -6,35 +6,13 @@
   </el-config-provider>
 </template>
 
-<script setup lang="ts">
+<script setup lang="ts" name="App">
 import { ElConfigProvider } from 'element-plus';
 </script>
 
-<style>
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
+<style scoped lang="less">
 #app {
   min-height: 100vh;
   background-color: #f5f7fa;
-}
-
-/* 路由过渡动画 */
-.fade-slide-enter-active,
-.fade-slide-leave-active {
-  transition: all 0.3s ease;
-}
-
-.fade-slide-enter-from {
-  opacity: 0;
-  transform: translateX(-30px);
-}
-
-.fade-slide-leave-to {
-  opacity: 0;
-  transform: translateX(30px);
 }
 </style>
