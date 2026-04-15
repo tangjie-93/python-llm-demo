@@ -49,6 +49,35 @@
               prefix-icon="Lock"
               show-password
             />
+            <!-- 密码强度提示 -->
+            <div class="password-strength" v-if="registerForm.password">
+              <div class="strength-bars">
+                <span :class="['strength-bar', { weak: strengthScore >= 1 }]"></span>
+                <span :class="['strength-bar', { medium: strengthScore >= 2 }]"></span>
+                <span :class="['strength-bar', { strong: strengthScore >= 3 }]"></span>
+                <span :class="['strength-bar', { veryStrong: strengthScore >= 4 }]"></span>
+              </div>
+              <span :class="['strength-text', getStrengthClass()]">{{ getStrengthText() }}</span>
+            </div>
+            <!-- 密码要求列表 -->
+            <div class="password-requirements">
+              <div :class="['requirement', { met: checkRequirement('length') }]">
+                <i :class="checkRequirement('length') ? 'el-icon-check' : 'el-icon-close'"></i>
+                <span>至少 8 个字符</span>
+              </div>
+              <div :class="['requirement', { met: checkRequirement('lowercase') }]">
+                <i :class="checkRequirement('lowercase') ? 'el-icon-check' : 'el-icon-close'"></i>
+                <span>包含小写字母</span>
+              </div>
+              <div :class="['requirement', { met: checkRequirement('uppercase') }]">
+                <i :class="checkRequirement('uppercase') ? 'el-icon-check' : 'el-icon-close'"></i>
+                <span>包含大写字母</span>
+              </div>
+              <div :class="['requirement', { met: checkRequirement('number') }]">
+                <i :class="checkRequirement('number') ? 'el-icon-check' : 'el-icon-close'"></i>
+                <span>包含数字</span>
+              </div>
+            </div>
           </el-form-item>
 
           <el-form-item prop="confirmPassword">
@@ -108,29 +137,124 @@ const registerForm = reactive({
   confirmPassword: ''
 });
 
+// 计算密码强度分数
+const strengthScore = ref(0);
+
+// 检查密码要求
+const checkRequirement = (type: string) => {
+  const password = registerForm.password;
+  switch (type) {
+    case 'length':
+      return password.length >= 8;
+    case 'lowercase':
+      return /[a-z]/.test(password);
+    case 'uppercase':
+      return /[A-Z]/.test(password);
+    case 'number':
+      return /\d/.test(password);
+    default:
+      return false;
+  }
+};
+
+// 计算密码强度
+const calculateStrength = () => {
+  const password = registerForm.password;
+  let score = 0;
+  
+  if (password.length >= 8) score++;
+  if (/[a-z]/.test(password)) score++;
+  if (/[A-Z]/.test(password)) score++;
+  if (/\d/.test(password)) score++;
+  if (/[^a-zA-Z0-9]/.test(password)) score++; // 特殊字符加分
+  
+  strengthScore.value = Math.min(score, 4);
+};
+
+// 获取强度等级类名
+const getStrengthClass = () => {
+  if (strengthScore.value <= 1) return 'weak';
+  if (strengthScore.value === 2) return 'medium';
+  if (strengthScore.value === 3) return 'strong';
+  return 'very-strong';
+};
+
+// 获取强度文本
+const getStrengthText = () => {
+  if (strengthScore.value === 0) return '';
+  if (strengthScore.value <= 1) return '弱';
+  if (strengthScore.value === 2) return '中等';
+  if (strengthScore.value === 3) return '强';
+  return '非常强';
+};
+
+const validateUsername = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
+  if (!value) {
+    callback(new Error('请输入用户名'));
+  } else if (!/^[a-zA-Z0-9_]{4,32}$/.test(value)) {
+    callback(new Error('用户名应为 4-32 位字母、数字或下划线'));
+  } else {
+    callback();
+  }
+};
+
+const validatePassword = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
+  if (!value) {
+    callback(new Error('请输入密码'));
+    return;
+  }
+  
+  if (value.length < 8) {
+    callback(new Error('密码长度至少为 8 位'));
+    return;
+  }
+  
+  if (!/[a-z]/.test(value)) {
+    callback(new Error('密码必须包含小写字母'));
+    return;
+  }
+  
+  if (!/[A-Z]/.test(value)) {
+    callback(new Error('密码必须包含大写字母'));
+    return;
+  }
+  
+  if (!/\d/.test(value)) {
+    callback(new Error('密码必须包含数字'));
+    return;
+  }
+  
+  callback();
+};
+
 const validateConfirmPassword = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
-  if (value !== registerForm.password) {
+  if (!value) {
+    callback(new Error('请再次输入密码'));
+  } else if (value !== registerForm.password) {
     callback(new Error('两次输入的密码不一致'));
   } else {
     callback();
   }
 };
 
+// 监听密码变化
+const watch = (await import('vue')).watch;
+watch(() => registerForm.password, () => {
+  calculateStrength();
+});
+
 const rules: FormRules = {
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' },
-    { min: 3, max: 20, message: '用户名长度在 3 到 20 个字符', trigger: 'blur' }
+    { validator: validateUsername, trigger: 'blur' }
   ],
   email: [
     { required: true, message: '请输入邮箱', trigger: 'blur' },
     { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' }
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码长度不能少于 6 位', trigger: 'blur' }
+    { validator: validatePassword, trigger: 'blur' }
   ],
   confirmPassword: [
-    { required: true, message: '请再次输入密码', trigger: 'blur' },
     { validator: validateConfirmPassword, trigger: 'blur' }
   ]
 };
@@ -216,6 +340,98 @@ function goToLogin() {
 
     :deep(.el-card__body) {
       padding: 32px 40px 28px;
+    }
+  }
+
+  // 密码强度提示样式
+  .password-strength {
+    margin-top: 8px;
+    padding: 8px 0;
+    
+    .strength-bars {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 6px;
+      
+      .strength-bar {
+        flex: 1;
+        height: 4px;
+        border-radius: 2px;
+        background-color: #e0e0e0;
+        transition: all 0.3s ease;
+        
+        &.weak {
+          background-color: #f44336;
+        }
+        
+        &.medium {
+          background-color: #ff9800;
+        }
+        
+        &.strong {
+          background-color: #4caf50;
+        }
+        
+        &.veryStrong {
+          background-color: #2196f3;
+        }
+      }
+    }
+    
+    .strength-text {
+      font-size: 12px;
+      font-weight: 500;
+      
+      &.weak {
+        color: #f44336;
+      }
+      
+      &.medium {
+        color: #ff9800;
+      }
+      
+      &.strong {
+        color: #4caf50;
+      }
+      
+      &.very-strong {
+        color: #2196f3;
+      }
+    }
+  }
+  
+  // 密码要求列表样式
+  .password-requirements {
+    margin-top: 12px;
+    padding: 12px;
+    background-color: #f5f7fa;
+    border-radius: 6px;
+    
+    .requirement {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+      font-size: 12px;
+      color: #909399;
+      transition: all 0.3s ease;
+      
+      &:last-child {
+        margin-bottom: 0;
+      }
+      
+      i {
+        font-size: 12px;
+        transition: all 0.3s ease;
+      }
+      
+      &.met {
+        color: #67c23a;
+        
+        i {
+          color: #67c23a;
+        }
+      }
     }
   }
 

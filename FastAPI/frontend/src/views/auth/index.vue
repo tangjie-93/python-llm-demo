@@ -87,12 +87,51 @@ const loginForm = reactive({
   password: ''
 });
 
+const validateUsername = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
+  if (!value) {
+    callback(new Error('请输入用户名'));
+  } else if (!/^[a-zA-Z0-9_]{4,32}$/.test(value)) {
+    callback(new Error('用户名应为 4-32 位字母、数字或下划线'));
+  } else {
+    callback();
+  }
+};
+
+const validatePassword = (_rule: unknown, value: string, callback: (error?: Error) => void) => {
+  if (!value) {
+    callback(new Error('请输入密码'));
+    return;
+  }
+  
+  if (value.length < 8) {
+    callback(new Error('密码长度至少为 8 位'));
+    return;
+  }
+  
+  if (!/[a-z]/.test(value)) {
+    callback(new Error('密码必须包含小写字母'));
+    return;
+  }
+  
+  if (!/[A-Z]/.test(value)) {
+    callback(new Error('密码必须包含大写字母'));
+    return;
+  }
+  
+  if (!/\d/.test(value)) {
+    callback(new Error('密码必须包含数字'));
+    return;
+  }
+  
+  callback();
+};
+
 const rules: FormRules = {
   username: [
-    { required: true, message: '请输入用户名', trigger: 'blur' }
+    { validator: validateUsername, trigger: 'blur' }
   ],
   password: [
-    { required: true, message: '请输入密码', trigger: 'blur' }
+    { validator: validatePassword, trigger: 'blur' }
   ]
 };
 
@@ -106,14 +145,31 @@ async function handleLogin() {
         await authStore.login(loginForm.username, loginForm.password);
         ElMessage.success({
           message: '登录成功',
-          duration: 500 // 1.5秒
+          duration: 500 // 1.5 秒
         });
         // 延迟跳转，让用户看到成功提示
         setTimeout(() => {
           router.push('/home');
         }, 500);
       } catch (error: any) {
-        ElMessage.error(error.message||error||'登录失败');
+        const errorMsg = error.message || error || '登录失败';
+        
+        // 检查是否是账户锁定错误
+        if (errorMsg.includes('账户已锁定')) {
+          ElMessage.error({
+            message: errorMsg,
+            duration: 10000,
+            showClose: true
+          });
+        } else if (errorMsg.includes('还剩')) {
+          // 剩余尝试次数警告
+          ElMessage.warning({
+            message: errorMsg,
+            duration: 5000
+          });
+        } else {
+          ElMessage.error(errorMsg);
+        }
       } finally {
         loading.value = false;
       }

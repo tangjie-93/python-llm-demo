@@ -32,6 +32,8 @@ class User(SQLModel, table=True):
     - full_name: 真实姓名（可选）
     - is_active: 账户是否激活（默认 True）
     - is_superuser: 是否超级管理员（默认 False）
+    - refresh_token: 刷新令牌（用于 Token 刷新）
+    - token_expires_at: Token 过期时间
 
     关系：
     - posts: 一对多关系，关联到 Post 模型
@@ -44,6 +46,8 @@ class User(SQLModel, table=True):
         full_name: 真实姓名
         is_active: 是否激活
         is_superuser: 是否超级管理员
+        refresh_token: 刷新令牌
+        token_expires_at: Token 过期时间
         posts: 用户的文章列表
 
     Note:
@@ -59,6 +63,8 @@ class User(SQLModel, table=True):
     full_name: Optional[str] = None
     is_active: bool = Field(default=True)
     is_superuser: bool = Field(default=False)
+    refresh_token: Optional[str] = Field(default=None, nullable=True)
+    token_expires_at: Optional[str] = Field(default=None, nullable=True)
 
     # 一对多关系：一个用户可以有多篇文章
     posts: List["Post"] = Relationship(back_populates="author")

@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import api, { getErrorMessage } from '@/utils/api';
-import { BaseResponse, LoginResponse } from '@/types/auth';
+import { LoginResponse } from '@/types/auth';
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref<string | null>(localStorage.getItem('token'));
+  const token = ref<string | null>(null);
   const userInfo = ref<{ id: number; username: string; email: string } | null>(null);
 
   const isLoggedIn = computed(() => !!token.value);
@@ -19,9 +19,8 @@ export const useAuthStore = defineStore('auth', () => {
     if (!data?.access_token) {
       throw new Error('登录失败');
     }
-
     token.value = data.access_token;
-    localStorage.setItem('token', data.access_token);
+    // refresh_token 现在存储在 HttpOnly Cookie 中，不需要在前端存储
     await fetchUserInfo();
   }
 
@@ -39,10 +38,24 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function refreshTokenFunc() {
+    // refresh_token 存储在 HttpOnly Cookie 中，后端会自动读取
+    try {
+      const data = await api.post('/auth/refresh', {});
+      token.value = data.access_token;
+      return true;
+    } catch (error) {
+      console.error('刷新 token 失败:', getErrorMessage(error));
+      logout();
+      return false;
+    }
+  }
+
   function logout() {
     token.value = null;
     userInfo.value = null;
-    localStorage.removeItem('token');
+    // 调用后端登出接口清除 Cookie
+    api.post('/auth/logout').catch(() => {});
   }
 
   return {
@@ -52,6 +65,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     register,
     fetchUserInfo,
+    refreshTokenFunc,
     logout,
     api
   };

@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import type { RouteRecordRaw } from 'vue-router';
+import { useAuthStore } from '@/stores/auth';
 
 const routes: RouteRecordRaw[] = [
   {
@@ -56,13 +57,12 @@ const router = createRouter({
 });
 
 router.beforeEach((to, _from, next) => {
-  const token = localStorage.getItem('token');
-  // 临时禁用登录检查用于测试动画
-  // if (to.meta.requiresAuth && !token) {
-  //   next('/login');
-  // } else {
+  const authStore = useAuthStore();
+  if (to.meta.requiresAuth && !authStore.token) {
+    next('/login');
+  } else {
     next();
-  // }
+  }
 });
 
 export default router;

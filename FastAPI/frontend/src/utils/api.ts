@@ -1,15 +1,28 @@
 import { ApiError } from '@/types/auth';
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 import { ElMessage } from 'element-plus';
+import { useAuthStore } from '@/stores/auth';
 
 const axiosInstance = axios.create({
   baseURL: '/api',
   timeout: 10000
 });
 
+// 标记是否正在刷新 token
+let isRefreshing = false;
+// 存储 401 请求队列
+let requestsQueue: Array<() => void> = [];
+
+// 执行队列中的请求
+function executeQueue() {
+  requestsQueue.forEach(cb => cb());
+  requestsQueue = [];
+}
+
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    const token = localStorage.getItem('token');
+    const authStore = useAuthStore();
+    const token = authStore.token;
     if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -29,22 +42,73 @@ axiosInstance.interceptors.response.use(
     // 返回实际的 data 数据
     return response.data.data;
   },
-  (error: AxiosError<ApiError>) => {
+  async (error: AxiosError<ApiError>) => {
     const responseData = error.response?.data;
     let errorMessage = responseData?.message || responseData?.error || responseData?.detail || '请求失败';
+    
     if (error.response?.status === 401) {
       // 检查是否是登录接口的错误
-      if (!error.config?.url?.includes('/auth/login')) {
+      if (error.config?.url?.includes('/auth/login')) {
+        ElMessage.error({
+          message: errorMessage,
+          duration: 5000
+        });
+        return Promise.reject(errorMessage);
+      }
+      
+      const authStore = useAuthStore();
+      
+      // 如果已经在刷新 token，则加入队列
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          requestsQueue.push(() => {
+            axiosInstance(error.config!).then(resolve).catch(reject);
+          });
+        });
+      }
+      
+      // 尝试刷新 token
+      if (authStore.refreshToken) {
+        isRefreshing = true;
+        
+        try {
+          const success = await authStore.refreshTokenFunc();
+          
+          if (success) {
+            // 重新执行队列中的请求
+            executeQueue();
+            // 重试当前请求
+            return axiosInstance(error.config!);
+          } else {
+            // 刷新失败，跳转登录
+            ElMessage.error({
+              message: '登录已过期，请重新登录',
+              duration: 5000
+            });
+            window.location.href = '/login';
+            return Promise.reject(errorMessage);
+          }
+        } catch (refreshError) {
+          ElMessage.error({
+            message: '登录已过期，请重新登录',
+            duration: 5000
+          });
+          window.location.href = '/login';
+          return Promise.reject(errorMessage);
+        } finally {
+          isRefreshing = false;
+        }
+      } else {
+        // 没有 refresh token，直接跳转登录
         ElMessage.error({
           message: '登录已过期，请重新登录',
-          duration: 5000 // 5 秒
+          duration: 5000
         });
-        // 其他 401 错误，视为登录过期
-        localStorage.removeItem('token');
         window.location.href = '/login';
+        return Promise.reject(errorMessage);
       }
-      return Promise.reject(errorMessage);
     }
+    
     return Promise.reject(errorMessage);
   }
 );
