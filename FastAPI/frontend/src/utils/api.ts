@@ -51,11 +51,11 @@ axiosInstance.interceptors.response.use(
 
 // 包装 axios 方法，返回正确的类型
 const api = {
-  get: <T = any>(url: string, config?: any): Promise<T> => axiosInstance.get(url, config),
-  post: <T = any>(url: string, data?: any, config?: any): Promise<T> => axiosInstance.post(url, data, config),
-  put: <T = any>(url: string, data?: any, config?: any): Promise<T> => axiosInstance.put(url, data, config),
-  patch: <T = any>(url: string, data?: any, config?: any): Promise<T> => axiosInstance.patch(url, data, config),
-  delete: <T = any>(url: string, config?: any): Promise<T> => axiosInstance.delete(url, config),
+  get: <T = any>(url: string, config?: any): Promise<T> => axiosInstance.get(url, config) as Promise<T>,
+  post: <T = any>(url: string, data?: any, config?: any): Promise<T> => axiosInstance.post(url, data, config) as Promise<T>,
+  put: <T = any>(url: string, data?: any, config?: any): Promise<T> => axiosInstance.put(url, data, config) as Promise<T>,
+  patch: <T = any>(url: string, data?: any, config?: any): Promise<T> => axiosInstance.patch(url, data, config) as Promise<T>,
+  delete: <T = any>(url: string, config?: any): Promise<T> => axiosInstance.delete(url, config) as Promise<T>,
 };
 
 export default api;

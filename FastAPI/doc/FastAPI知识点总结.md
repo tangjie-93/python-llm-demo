@@ -839,36 +839,105 @@ async def response_headers(response: Response):
 
 ## 5. 依赖注入系统
 
-### 5.1 基础依赖注入
+FastAPI 的依赖注入系统是其核心特性之一，它允许你通过声明式的方式管理依赖关系，使代码更加模块化、可测试和可维护。
+
+### 5.1 什么是依赖注入
+
+依赖注入（Dependency Injection, DI）是一种设计模式，它将对象的创建和使用分离。在 FastAPI 中，你可以通过 `Depends` 来声明依赖，框架会自动解析和注入这些依赖。
+
+**核心概念：**
+- **依赖函数**：返回依赖对象的函数
+- **依赖提供者**：创建和管理依赖的函数或类
+- **依赖消费者**：使用依赖的路由处理函数
+
+### 5.2 基础依赖注入
+
+#### 5.2.1 最简单的依赖
 
 ```python
 from fastapi import FastAPI, Depends
 
 app = FastAPI()
 
-# 简单的依赖函数
-def get_database():
-    db = "database_connection"
-    try:
-        yield db
-    finally:
-        print("Closing database connection")
+# 定义依赖函数
+def common_parameters(q: str | None = None, skip: int = 0, limit: int = 100):
+    """
+    这是一个依赖函数，它可以像路径操作函数一样接收参数
+    FastAPI 会自动处理这些参数的验证和转换
+    """
+    return {"q": q, "skip": skip, "limit": limit}
 
 # 使用依赖
-@app.get("/users")
-def get_users(db: str = Depends(get_database)):
-    return {"db": db, "users": []}
+@app.get("/items/")
+async def read_items(commons: dict = Depends(common_parameters)):
+    """
+    通过 Depends() 声明依赖
+    FastAPI 会自动调用 common_parameters 并将返回值注入到 commons 参数
+    """
+    return commons
 
-# 依赖函数带参数
-def get_query_param(limit: int = 10, offset: int = 0):
-    return {"limit": limit, "offset": offset}
-
-@app.get("/items")
-def get_items(params: dict = Depends(get_query_param)):
-    return params
+@app.get("/users/")
+async def read_users(commons: dict = Depends(common_parameters)):
+    """
+    同一个依赖可以在多个路由中复用
+    """
+    return commons
 ```
 
-### 5.2 类作为依赖
+#### 5.2.2 带 yield 的依赖（上下文管理器模式）
+
+```python
+from fastapi import FastAPI, Depends, HTTPException
+
+app = FastAPI()
+
+# 数据库连接依赖
+def get_db():
+    """
+    使用 yield 创建上下文管理器模式的依赖
+    - yield 之前的代码在请求开始时执行（初始化）
+    - yield 之后的代码在请求结束后执行（清理）
+    """
+    db = SessionLocal()
+    try:
+        yield db  # 将 db 注入到路由函数
+    finally:
+        db.close()  # 确保连接被关闭
+
+# 使用数据库依赖
+@app.get("/users/{user_id}")
+def read_user(user_id: int, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.id == user_id).first()
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+```
+
+#### 5.2.3 异步依赖
+
+```python
+from fastapi import FastAPI, Depends
+import asyncio
+
+app = FastAPI()
+
+# 异步依赖函数
+async def get_async_data():
+    """
+    依赖函数也可以是异步的
+    适用于需要执行异步操作的场景（如异步数据库查询、HTTP 请求等）
+    """
+    await asyncio.sleep(0.1)  # 模拟异步操作
+    return {"data": "async result"}
+
+@app.get("/async-items/")
+async def read_async_items(data: dict = Depends(get_async_data)):
+    return data
+```
+
+### 5.3 类作为依赖
+
+#### 5.3.1 基础类依赖
 
 ```python
 from fastapi import FastAPI, Depends
@@ -876,13 +945,26 @@ from fastapi import FastAPI, Depends
 app = FastAPI()
 
 class DatabaseConnection:
+    """
+    类作为依赖提供者
+    适用于需要封装复杂逻辑的场景
+    """
     def __init__(self):
         self.connection = "connected"
+        self.query_count = 0
     
     def query(self, sql: str):
+        self.query_count += 1
         return [f"Result for: {sql}"]
+    
+    def get_stats(self):
+        return {"queries": self.query_count}
 
 def get_db():
+    """
+    使用生成器函数创建类实例
+    可以添加初始化逻辑和清理逻辑
+    """
     db = DatabaseConnection()
     try:
         yield db
@@ -892,117 +974,723 @@ def get_db():
 @app.get("/items")
 def get_items(db: DatabaseConnection = Depends(get_db)):
     results = db.query("SELECT * FROM items")
-    return results
+    stats = db.get_stats()
+    return {"results": results, "stats": stats}
 ```
 
-### 5.3 子依赖和依赖链
+#### 5.3.2 可调用类依赖
 
 ```python
-from fastapi import FastAPI, Depends, Header
+from fastapi import FastAPI, Depends, Request
 
 app = FastAPI()
 
-# 子依赖
+class PaginationParams:
+    """
+    可调用类作为依赖
+    通过 __call__ 方法实现，可以像函数一样使用
+    """
+    def __init__(self, default_skip: int = 0, default_limit: int = 100):
+        self.default_skip = default_skip
+        self.default_limit = default_limit
+    
+    def __call__(self, skip: int = 0, limit: int = 100):
+        """
+        __call__ 方法接收与路径操作函数相同的参数
+        FastAPI 会自动解析这些参数
+        """
+        # 可以在这里添加自定义逻辑
+        if limit > self.default_limit:
+            limit = self.default_limit
+        
+        return {"skip": skip, "limit": limit}
+
+# 创建依赖实例
+pagination = PaginationParams(default_limit=50)
+
+@app.get("/items")
+def get_items(params: dict = Depends(pagination)):
+    return params
+```
+
+### 5.4 子依赖和依赖链
+
+#### 5.4.1 多层依赖嵌套
+
+```python
+from fastapi import FastAPI, Depends, Header, HTTPException
+
+app = FastAPI()
+
+# 第一层依赖：基础查询参数
 def query_params(q: str | None = None, page: int = 1):
+    """
+    最基础的依赖，处理查询参数
+    """
     return {"q": q, "page": page}
 
-def pagination(params: dict = Depends(query_params), limit: int = 10):
+# 第二层依赖：分页逻辑，依赖第一层
+def pagination(
+    params: dict = Depends(query_params),  # 依赖第一层
+    limit: int = 10
+):
+    """
+    依赖可以嵌套，FastAPI 会自动解析依赖链
+    这里 pagination 依赖 query_params
+    """
     params["limit"] = limit
+    params["offset"] = (params["page"] - 1) * limit
+    return params
+
+# 第三层依赖：排序逻辑，依赖第二层
+def sorted_pagination(
+    params: dict = Depends(pagination),  # 依赖第二层
+    sort_by: str = "id",
+    order: str = "asc"
+):
+    """
+    可以继续嵌套，形成依赖链
+    """
+    params["sort_by"] = sort_by
+    params["order"] = order
     return params
 
 @app.get("/search")
-def search(p: dict = Depends(pagination)):
-    return p
-
-# Header 依赖
-def get_user_agent(user_agent: str = Header(default=None)):
-    return user_agent
-
-@app.get("/info")
-def info(user_agent: str = Depends(get_user_agent)):
-    return {"user_agent": user_agent}
-
-# 认证依赖
-def verify_token(authorization: str = Header(...)):
-    if not authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="Invalid token")
-    return authorization.replace("Bearer ", "")
-
-@app.get("/protected")
-def protected(token: str = Depends(verify_token)):
-    return {"token": token}
+def search(params: dict = Depends(sorted_pagination)):
+    """
+    最终路由只依赖最顶层的依赖
+    FastAPI 会自动解析整个依赖链
+    """
+    return params
 ```
 
-### 5.4 可缓存的依赖
+#### 5.4.2 Header 依赖
+
+```python
+from fastapi import FastAPI, Depends, Header, HTTPException
+
+app = FastAPI()
+
+# 从 Header 获取信息的依赖
+def get_user_agent(user_agent: str | None = Header(default=None)):
+    """
+    使用 Header 参数从请求头中获取值
+    """
+    return user_agent or "unknown"
+
+def get_request_id(x_request_id: str | None = Header(default=None)):
+    """
+    可以定义多个 Header 依赖
+    """
+    return x_request_id or "no-request-id"
+
+# 组合多个 Header 依赖
+def get_headers_info(
+    user_agent: str = Depends(get_user_agent),
+    request_id: str = Depends(get_request_id)
+):
+    """
+    一个依赖可以同时依赖多个其他依赖
+    """
+    return {
+        "user_agent": user_agent,
+        "request_id": request_id
+    }
+
+@app.get("/info")
+def info(headers: dict = Depends(get_headers_info)):
+    return headers
+```
+
+#### 5.4.3 认证依赖链
+
+```python
+from fastapi import FastAPI, Depends, Header, HTTPException, status
+from typing import Optional
+
+app = FastAPI()
+
+# 第一层：验证 Token 格式
+def verify_token_format(authorization: str = Header(...)):
+    """
+    验证 Authorization Header 是否存在且格式正确
+    """
+    if not authorization:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authorization header missing",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    scheme, _, token = authorization.partition(" ")
+    if scheme.lower() != "bearer":
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid authentication scheme",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Token missing",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    return token
+
+# 第二层：验证 Token 有效性
+def verify_token_valid(token: str = Depends(verify_token_format)):
+    """
+    验证 Token 是否有效（这里简化处理，实际应该使用 JWT 等）
+    """
+    # 这里应该进行实际的 Token 验证
+    # 例如：验证 JWT 签名、检查过期时间等
+    if token != "valid-token":  # 简化示例
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    return token
+
+# 第三层：获取当前用户
+def get_current_user(token: str = Depends(verify_token_valid)):
+    """
+    从 Token 中提取用户信息
+    """
+    # 这里应该从 Token 中解析用户信息
+    # 或者根据 Token 查询数据库获取用户
+    return {
+        "id": 1,
+        "username": "john",
+        "email": "john@example.com",
+        "token": token
+    }
+
+# 第四层：验证用户权限
+def require_admin(current_user: dict = Depends(get_current_user)):
+    """
+    验证用户是否有管理员权限
+    """
+    if current_user.get("role") != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+    return current_user
+
+# 普通用户路由
+@app.get("/profile")
+def get_profile(user: dict = Depends(get_current_user)):
+    return user
+
+# 管理员路由
+@app.get("/admin/users")
+def get_all_users(admin: dict = Depends(require_admin)):
+    return {"message": "Admin access granted", "admin": admin}
+```
+
+### 5.5 依赖缓存机制
+
+#### 5.5.1 默认缓存行为
 
 ```python
 from fastapi import FastAPI, Depends
 
 app = FastAPI()
 
-# 默认情况下，依赖在每个请求中都会被调用
 def get_settings():
-    print("Loading settings...")  # 每次请求都会打印
-    return {"debug": True}
+    """
+    默认情况下，依赖在同一个请求中会被缓存
+    即同一个依赖函数在同一个请求中只会被调用一次
+    """
+    print("Loading settings...")  # 在同一个请求中只会打印一次
+    return {"debug": True, "database_url": "sqlite:///./app.db"}
 
-# 使用缓存 - 在同一个请求中只调用一次
-@app.get("/cached")
-async def cached(settings: dict = Depends(get_settings)):
-    return settings
+def get_database(settings: dict = Depends(get_settings)):
+    """
+    这里使用的 settings 是缓存的，不会重新调用 get_settings
+    """
+    print(f"Creating database with URL: {settings['database_url']}")
+    return f"Database({settings['database_url']})"
+
+@app.get("/items")
+def get_items(
+    settings: dict = Depends(get_settings),  # 第一次调用 get_settings
+    db: str = Depends(get_database)          # 使用缓存的 settings，不会再次调用 get_settings
+):
+    return {"settings": settings, "db": db}
 ```
 
-### 5.5 依赖的多种用法
+#### 5.5.2 禁用缓存
 
 ```python
-from fastapi import Fastapi, Depends, HTTPException
+from fastapi import FastAPI, Depends
+
+app = FastAPI()
+
+def get_timestamp():
+    """
+    每次调用都返回当前时间戳
+    """
+    import time
+    return time.time()
+
+@app.get("/no-cache")
+def no_cache(
+    # 使用 use_cache=False 禁用缓存
+    timestamp1: float = Depends(get_timestamp, use_cache=False),
+    timestamp2: float = Depends(get_timestamp, use_cache=False)
+):
+    """
+    禁用缓存后，每次依赖都会重新调用
+    timestamp1 和 timestamp2 可能不同
+    """
+    return {"timestamp1": timestamp1, "timestamp2": timestamp2}
+
+@app.get("/with-cache")
+def with_cache(
+    # 默认 use_cache=True
+    timestamp1: float = Depends(get_timestamp),
+    timestamp2: float = Depends(get_timestamp)
+):
+    """
+    使用缓存时，同一个请求中只会调用一次
+    timestamp1 和 timestamp2 一定相同
+    """
+    return {"timestamp1": timestamp1, "timestamp2": timestamp2}
+```
+
+### 5.6 依赖的多种用法
+
+#### 5.6.1 可选依赖
+
+```python
+from fastapi import FastAPI, Depends
+from typing import Optional
+
+app = FastAPI()
+
+def get_optional_query(q: Optional[str] = None):
+    """
+    可选依赖，参数可以有默认值
+    """
+    return q
+
+@app.get("/optional")
+def optional_dep(q: Optional[str] = Depends(get_optional_query)):
+    """
+    当不提供查询参数时，q 为 None
+    """
+    return {"q": q}
+```
+
+#### 5.6.2 多个依赖
+
+```python
+from fastapi import FastAPI, Depends
+
+app = FastAPI()
+
+def dependency_a():
+    return "Service A"
+
+def dependency_b():
+    return "Service B"
+
+def dependency_c():
+    return "Service C"
+
+@app.get("/multiple")
+def multiple_deps(
+    a: str = Depends(dependency_a),
+    b: str = Depends(dependency_b),
+    c: str = Depends(dependency_c)
+):
+    """
+    一个路由可以依赖多个依赖
+    FastAPI 会并行解析独立的依赖
+    """
+    return {"a": a, "b": b, "c": c}
+```
+
+#### 5.6.3 使用 Annotated（推荐方式）
+
+```python
+from fastapi import FastAPI, Depends, Query
 from typing import Annotated
 
 app = FastAPI()
 
-# 可选依赖
-def get_optional_dependency(q: str | None = None):
-    return q
+def get_pagination(
+    skip: int = 0,
+    limit: int = Query(default=100, le=1000)
+):
+    return {"skip": skip, "limit": limit}
 
-@app.get("/optional")
-def optional_dep(q: str | None = Depends(get_optional_dependency)):
+def get_filter(q: str | None = None):
     return {"q": q}
 
-# 多个依赖
-def dependency_a():
-    return "A"
-
-def dependency_b():
-    return "B"
-
-@app.get("/multiple")
-def multiple_deps(a: str = Depends(dependency_a), b: str = Depends(dependency_b)):
-    return {"a": a, "b": b}
-
-# 使用 Annotated (推荐方式)
-@app.get("/annotated")
-def annotated_dep(limit: Annotated[int, Depends(get_optional_dependency)] = 10):
-    return {"limit": limit}
+@app.get("/items")
+def read_items(
+    """
+    使用 Annotated 是 FastAPI 0.95.0+ 推荐的方式
+    它更清晰地表达了依赖关系
+    """
+    pagination: Annotated[dict, Depends(get_pagination)],
+    filter_params: Annotated[dict, Depends(get_filter)],
+):
+    return {
+        "pagination": pagination,
+        "filter": filter_params
+    }
 ```
 
-### 5.6 全局依赖
+### 5.7 路径操作装饰器中的依赖
+
+#### 5.7.1 路由级别的依赖
 
 ```python
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, HTTPException, Header
 
 app = FastAPI()
 
-# 全局依赖 - 应用于所有路由
-def common_parameters():
-    return {"skip": 0, "limit": 10}
+# 定义一个验证依赖
+def verify_api_key(x_api_key: str = Header(...)):
+    if x_api_key != "secret-key":
+        raise HTTPException(status_code=403, detail="Invalid API Key")
+    return x_api_key
+
+# 为特定路由添加依赖
+# 这些依赖会在路由处理函数之前执行，但它们的返回值不会被使用
+@app.get("/protected-items", dependencies=[Depends(verify_api_key)])
+def get_protected_items():
+    """
+    这个路由会执行 verify_api_key 依赖
+    但依赖的返回值不会传递给函数参数
+    """
+    return {"message": "Protected data"}
+
+@app.post("/protected-items", dependencies=[Depends(verify_api_key)])
+def create_protected_item():
+    return {"message": "Item created"}
+```
+
+#### 5.7.2 包含依赖的路由器
+
+```python
+from fastapi import FastAPI, Depends, APIRouter, HTTPException, Header
+
+app = FastAPI()
+
+# 定义验证依赖
+def verify_token(x_token: str = Header(...)):
+    if x_token != "fake-super-secret-token":
+        raise HTTPException(status_code=400, detail="X-Token header invalid")
+    return x_token
+
+# 创建一个包含依赖的路由器
+# 该路由器下的所有路由都会自动应用这些依赖
+router = APIRouter(
+    prefix="/items",
+    tags=["items"],
+    dependencies=[Depends(verify_token)],  # 应用到所有子路由
+    responses={404: {"description": "Not found"}},
+)
+
+@router.get("/")
+async def read_items():
+    """
+    会自动应用 verify_token 依赖
+    """
+    return [{"item": "Foo"}, {"item": "Bar"}]
+
+@router.get("/{item_id}")
+async def read_item(item_id: str):
+    """
+    也会自动应用 verify_token 依赖
+    """
+    return {"item": item_id}
+
+# 将路由器添加到应用
+app.include_router(router)
+```
+
+### 5.8 全局依赖
+
+#### 5.8.1 应用级别的全局依赖
+
+```python
+from fastapi import FastAPI, Depends, Request
+from fastapi.responses import JSONResponse
+import time
+import uuid
+
+# 定义全局依赖
+
+async def add_request_id(request: Request):
+    """
+    为每个请求添加唯一的请求 ID
+    """
+    request_id = str(uuid.uuid4())
+    request.state.request_id = request_id
+    return request_id
+
+async def log_request(request: Request):
+    """
+    记录请求日志
+    """
+    start_time = time.time()
+    request.state.start_time = start_time
+    print(f"[{request.state.request_id}] {request.method} {request.url}")
+    return start_time
+
+# 创建应用时添加全局依赖
+app = FastAPI(
+    dependencies=[
+        Depends(add_request_id),
+        Depends(log_request)
+    ]
+)
 
 @app.get("/items")
-def get_items(params: dict = Depends(common_parameters)):
-    return params
+def get_items(request: Request):
+    """
+    所有路由都会自动应用全局依赖
+    可以通过 request.state 访问依赖设置的状态
+    """
+    return {
+        "request_id": request.state.request_id,
+        "items": ["item1", "item2"]
+    }
 
-# 可以为特定路由覆盖
-@app.get("/special", dependencies=[])  # 不使用全局依赖
-def get_special():
-    return {"special": True}
+@app.get("/users")
+def get_users(request: Request):
+    return {
+        "request_id": request.state.request_id,
+        "users": ["user1", "user2"]
+    }
+```
+
+#### 5.8.2 条件全局依赖
+
+```python
+from fastapi import FastAPI, Depends, Request
+from fastapi.responses import JSONResponse
+
+app = FastAPI()
+
+# 定义一个检查依赖
+async def check_maintenance_mode(request: Request):
+    """
+    检查系统是否处于维护模式
+    """
+    # 这里可以从配置文件或数据库读取维护状态
+    maintenance_mode = False  # 示例
+    
+    if maintenance_mode and not request.url.path.startswith("/health"):
+        return JSONResponse(
+            status_code=503,
+            content={"detail": "Service is under maintenance"}
+        )
+
+# 添加全局依赖
+app = FastAPI(dependencies=[Depends(check_maintenance_mode)])
+
+@app.get("/health")
+def health_check():
+    """
+    健康检查端点，在维护模式下也应该可用
+    """
+    return {"status": "healthy"}
+
+@app.get("/items")
+def get_items():
+    return {"items": []}
+```
+
+### 5.9 依赖注入的最佳实践
+
+#### 5.9.1 依赖的组织结构
+
+```
+project/
+├── app/
+│   ├── __init__.py
+│   ├── main.py              # FastAPI 应用入口
+│   ├── dependencies/        # 依赖模块
+│   │   ├── __init__.py
+│   │   ├── database.py      # 数据库依赖
+│   │   ├── auth.py          # 认证依赖
+│   │   ├── pagination.py    # 分页依赖
+│   │   └── common.py        # 通用依赖
+│   ├── routers/
+│   └── services/
+```
+
+#### 5.9.2 数据库依赖示例
+
+```python
+# app/dependencies/database.py
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+from fastapi import Depends
+
+# 数据库配置
+DATABASE_URL = "sqlite:///./sql_app.db"
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+def get_db() -> Session:
+    """
+    数据库会话依赖
+    确保每个请求都有独立的数据库会话
+    请求结束后自动关闭会话
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# 类型别名，方便使用
+DBDependency = Depends(get_db)
+```
+
+#### 5.9.3 认证依赖示例
+
+```python
+# app/dependencies/auth.py
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+from pydantic import BaseModel
+from typing import Optional
+
+# JWT 配置
+SECRET_KEY = "your-secret-key"
+ALGORITHM = "HS256"
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+class TokenData(BaseModel):
+    username: Optional[str] = None
+
+class User(BaseModel):
+    username: str
+    email: Optional[str] = None
+    full_name: Optional[str] = None
+    disabled: Optional[bool] = None
+
+# 模拟用户数据库
+fake_users_db = {
+    "johndoe": {
+        "username": "johndoe",
+        "full_name": "John Doe",
+        "email": "johndoe@example.com",
+        "hashed_password": "fakehashedsecret",
+        "disabled": False,
+    }
+}
+
+def get_user(db, username: str):
+    if username in db:
+        user_dict = db[username]
+        return User(**user_dict)
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    """
+    获取当前登录用户
+    这是一个可复用的依赖，用于需要认证的路由
+    """
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+        token_data = TokenData(username=username)
+    except JWTError:
+        raise credentials_exception
+    
+    user = get_user(fake_users_db, username=token_data.username)
+    if user is None:
+        raise credentials_exception
+    return user
+
+async def get_current_active_user(
+    current_user: User = Depends(get_current_user)
+):
+    """
+    获取当前活跃用户
+    在 get_current_user 基础上增加用户状态检查
+    """
+    if current_user.disabled:
+        raise HTTPException(status_code=400, detail="Inactive user")
+    return current_user
+```
+
+#### 5.9.4 在路由中使用依赖
+
+```python
+# app/routers/users.py
+from fastapi import APIRouter, Depends
+from typing import List
+from app.dependencies.auth import get_current_active_user, User
+from app.dependencies.database import get_db, Session
+
+router = APIRouter()
+
+@router.get("/users/me", response_model=User)
+async def read_users_me(current_user: User = Depends(get_current_active_user)):
+    """
+    获取当前用户信息
+    """
+    return current_user
+
+@router.get("/users/{user_id}")
+async def read_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_active_user)
+):
+    """
+    获取指定用户信息
+    同时使用数据库依赖和认证依赖
+    """
+    # 使用 db 查询用户
+    # user = db.query(UserModel).filter(UserModel.id == user_id).first()
+    return {"user_id": user_id, "current_user": current_user}
+```
+
+### 5.10 依赖注入的测试
+
+```python
+# 测试时覆盖依赖
+from fastapi.testclient import TestClient
+from app.main import app, get_db
+
+# 创建测试用的数据库依赖
+def override_get_db():
+    try:
+        db = TestingSessionLocal()
+        yield db
+    finally:
+        db.close()
+
+# 覆盖原始依赖
+app.dependency_overrides[get_db] = override_get_db
+
+client = TestClient(app)
+
+def test_read_items():
+    response = client.get("/items/")
+    assert response.status_code == 200
 ```
 
 ---
