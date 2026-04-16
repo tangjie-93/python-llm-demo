@@ -35,16 +35,20 @@ axiosInstance.interceptors.request.use(
 
 axiosInstance.interceptors.response.use(
   (response: AxiosResponse) => {
+    // 后端统一返回格式：{success: true, message: "...", data: {...}}
+    const responseData = response.data;
+    
     // 如果响应中有 success 字段且为 false，则抛出错误
-    if (response.data && 'success' in response.data && !response.data.success) {
-      throw new Error(response.data.message || response.data.error || '请求失败');
+    if (responseData && 'success' in responseData && !responseData.success) {
+      throw new Error(responseData.message || '请求失败');
     }
+    
     // 返回实际的 data 数据
-    return response.data.data;
+    return responseData.data;
   },
   async (error: AxiosError<ApiError>) => {
     const responseData = error.response?.data;
-    let errorMessage = responseData?.message || responseData?.error || responseData?.detail || '请求失败';
+    let errorMessage = responseData?.message || '请求失败';
     
     if (error.response?.status === 401) {
       // 检查是否是登录接口的错误 - 登录接口不显示错误提示，由组件自己处理

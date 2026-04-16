@@ -59,8 +59,7 @@ def setup_exception_handlers(app: FastAPI):
         return JSONResponse(
             status_code=exc.status_code,
             content=error_response(
-                message=exc.detail,
-                error=exc.__class__.__name__
+                message=exc.detail
             ).model_dump()
         )
 
@@ -82,9 +81,7 @@ def setup_exception_handlers(app: FastAPI):
         return JSONResponse(
             status_code=422,
             content=error_response(
-                message="请求参数验证失败",
-                error="ValidationError",
-                details=exc.errors()
+                message="请求参数验证失败"
             ).model_dump()
         )
 
@@ -106,9 +103,7 @@ def setup_exception_handlers(app: FastAPI):
         return JSONResponse(
             status_code=422,
             content=error_response(
-                message="数据验证失败",
-                error="ValidationError",
-                details=exc.errors()
+                message="数据验证失败"
             ).model_dump()
         )
 
@@ -131,18 +126,9 @@ def setup_exception_handlers(app: FastAPI):
             - 生产环境下不会返回详细的错误信息和堆栈跟踪
             - 调试模式下会返回详细信息，便于开发调试
         """
-        import traceback
-        details = {
-            "error_message": str(exc) if app.debug else "请联系管理员"
-        }
-        if app.debug:
-            details["traceback"] = traceback.format_exc()
-        
         return JSONResponse(
             status_code=500,
             content=error_response(
-                message="服务器内部错误",
-                error="InternalServerError",
-                details=details
+                message="服务器内部错误"
             ).model_dump()
         )

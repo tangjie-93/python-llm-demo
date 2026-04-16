@@ -280,7 +280,8 @@ async function handleRegister() {
           router.push('/login');
         }, 1500);
       } catch (error: any) {
-        ElMessage.error(error.response?.data?.detail || '注册失败');
+        // error 已经是响应拦截器返回的错误消息字符串
+        ElMessage.error(typeof error === 'string' ? error : (error.message || '注册失败'));
       } finally {
         loading.value = false;
       }

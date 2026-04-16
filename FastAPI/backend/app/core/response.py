@@ -15,16 +15,14 @@ def success_response(data=None, message="操作成功"):
     return ApiResponse(success=True, message=message, data=data)
 
 
-def error_response(message="操作失败", error=None, details=None):
+def error_response(message="操作失败"):
     """
     错误响应
     
     Args:
         message: 错误提示信息
-        error: 错误类型
-        details: 详细信息
     
     Returns:
         ApiResponse: 统一格式的错误响应
     """
-    return ApiResponse(success=False, message=message, error=error, details=details, data=None)
+    return ApiResponse(success=False, message=message, data=None)

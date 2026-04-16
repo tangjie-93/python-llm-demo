@@ -76,7 +76,11 @@ class LoginAttemptTracker:
             tuple[bool, Optional[int]]: (是否锁定，剩余锁定时间（分钟）)
         """
         with self._lock:
-            failed_count = self.get_failed_count(username)
+            cutoff = datetime.now(timezone.utc) - timedelta(hours=1)
+            recent_attempts = [
+                t for t in self.failed_attempts[username] if t > cutoff
+            ]
+            failed_count = len(recent_attempts)
             
             if failed_count >= self.max_attempts:
                 # 计算最早失败时间
@@ -398,26 +402,35 @@ async def login(
         - 5 次失败后锁定账户 1 小时
     """
     print("login form_data:", form_data)
+    print(f"username: {form_data.username}, password: {form_data.password}")
 
     # 验证用户名格式
+    print(f"validating username: {form_data.username}")
     if not re.match(r'^[a-zA-Z0-9_]{4,32}$', form_data.username):
+        print("username validation failed")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="用户名格式错误",
             headers={"WWW-Authenticate": "Bearer"},
         )
+    print("username validation passed")
 
     # 检查是否被锁定
+    print("checking lock status")
     is_locked, remaining_minutes = login_tracker.is_locked_out(form_data.username)
     if is_locked:
+        print(f"account locked, remaining: {remaining_minutes} minutes")
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=f"登录尝试次数过多，账户已锁定。请 {remaining_minutes} 分钟后再试",
             headers={"Retry-After": str(remaining_minutes * 60)},
         )
+    print("account not locked")
 
     # 根据用户名查找用户
+    print(f"querying user: {form_data.username}")
     user = session.exec(select(User).where(User.username == form_data.username)).first()
+    print(f"user found: {user}")
 
     # 验证用户是否存在
     if not user:
@@ -467,15 +480,18 @@ async def login(
     session.commit()
 
     # 创建响应
+    response_data = success_response(
+        data={
+            "access_token": access_token,
+            "token_type": "bearer",
+            "expires_in": int(access_token_expires.total_seconds())
+        },
+        message="登录成功"
+    )
+    
     response = Response(
-        content=success_response(
-            data={
-                "access_token": access_token,
-                "token_type": "bearer",
-                "expires_in": int(access_token_expires.total_seconds())
-            },
-            message="登录成功"
-        )["detail"]
+        content=response_data.model_dump_json(),
+        media_type="application/json"
     )
     
     # 设置 HttpOnly Cookie 存储 refresh token
