@@ -49,33 +49,34 @@
               prefix-icon="Lock"
               show-password
             />
-            <!-- 密码强度提示 -->
+            <!-- 密码强度和要求 -->
             <div class="password-strength" v-if="registerForm.password">
-              <div class="strength-bars">
-                <span :class="['strength-bar', { weak: strengthScore >= 1 }]"></span>
-                <span :class="['strength-bar', { medium: strengthScore >= 2 }]"></span>
-                <span :class="['strength-bar', { strong: strengthScore >= 3 }]"></span>
-                <span :class="['strength-bar', { veryStrong: strengthScore >= 4 }]"></span>
+              <div class="strength-header">
+                <div class="strength-bars">
+                  <span :class="['strength-bar', { weak: strengthScore >= 1 }]"></span>
+                  <span :class="['strength-bar', { medium: strengthScore >= 2 }]"></span>
+                  <span :class="['strength-bar', { strong: strengthScore >= 3 }]"></span>
+                  <span :class="['strength-bar', { veryStrong: strengthScore >= 4 }]"></span>
+                </div>
+                <span :class="['strength-text', getStrengthClass()]">{{ getStrengthText() }}</span>
               </div>
-              <span :class="['strength-text', getStrengthClass()]">{{ getStrengthText() }}</span>
-            </div>
-            <!-- 密码要求列表 -->
-            <div class="password-requirements">
-              <div :class="['requirement', { met: checkRequirement('length') }]">
-                <i :class="checkRequirement('length') ? 'el-icon-check' : 'el-icon-close'"></i>
-                <span>至少 8 个字符</span>
-              </div>
-              <div :class="['requirement', { met: checkRequirement('lowercase') }]">
-                <i :class="checkRequirement('lowercase') ? 'el-icon-check' : 'el-icon-close'"></i>
-                <span>包含小写字母</span>
-              </div>
-              <div :class="['requirement', { met: checkRequirement('uppercase') }]">
-                <i :class="checkRequirement('uppercase') ? 'el-icon-check' : 'el-icon-close'"></i>
-                <span>包含大写字母</span>
-              </div>
-              <div :class="['requirement', { met: checkRequirement('number') }]">
-                <i :class="checkRequirement('number') ? 'el-icon-check' : 'el-icon-close'"></i>
-                <span>包含数字</span>
+              <div class="password-requirements">
+                <span :class="['req-item', { met: checkRequirement('length') }]">
+                  <el-icon :size="11"><CircleCheck v-if="checkRequirement('length')" /><CircleClose v-else /></el-icon>
+                  <span>8 个字符</span>
+                </span>
+                <span :class="['req-item', { met: checkRequirement('lowercase') }]">
+                  <el-icon :size="11"><CircleCheck v-if="checkRequirement('lowercase')" /><CircleClose v-else /></el-icon>
+                  <span>小写字母</span>
+                </span>
+                <span :class="['req-item', { met: checkRequirement('uppercase') }]">
+                  <el-icon :size="11"><CircleCheck v-if="checkRequirement('uppercase')" /><CircleClose v-else /></el-icon>
+                  <span>大写字母</span>
+                </span>
+                <span :class="['req-item', { met: checkRequirement('number') }]">
+                  <el-icon :size="11"><CircleCheck v-if="checkRequirement('number')" /><CircleClose v-else /></el-icon>
+                  <span>数字</span>
+                </span>
               </div>
             </div>
           </el-form-item>
@@ -120,9 +121,10 @@
 </template>
 
 <script setup lang="ts" name="RegisterView">
-import { reactive, ref } from 'vue';
+import { reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage, type FormInstance, type FormRules } from 'element-plus';
+import { CircleCheck, CircleClose } from '@element-plus/icons-vue';
 import { useAuthStore } from '@/stores/auth';
 
 const router = useRouter();
@@ -238,7 +240,6 @@ const validateConfirmPassword = (_rule: unknown, value: string, callback: (error
 };
 
 // 监听密码变化
-const watch = (await import('vue')).watch;
 watch(() => registerForm.password, () => {
   calculateStrength();
 });
@@ -345,91 +346,130 @@ function goToLogin() {
 
   // 密码强度提示样式
   .password-strength {
-    margin-top: 8px;
-    padding: 8px 0;
+    width: 100%;
+    margin-top: 10px;
+    padding: 12px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #f0f2f5 100%);
+    border-radius: 6px;
+    border: 1px solid #e8eaed;
     
-    .strength-bars {
+    .strength-header {
       display: flex;
-      gap: 4px;
-      margin-bottom: 6px;
+      align-items: center;
+      justify-content: space-between;
       
-      .strength-bar {
+      .strength-bars {
+        display: flex;
+        gap: 4px;
         flex: 1;
-        height: 4px;
-        border-radius: 2px;
-        background-color: #e0e0e0;
-        transition: all 0.3s ease;
+        max-width: 300px;
+        
+        .strength-bar {
+          flex: 1;
+          height: 4px;
+          border-radius: 2px;
+          background-color: #e0e0e0;
+          transition: all 0.3s ease;
+          
+          &.weak {
+            background: linear-gradient(90deg, #f44336, #f44336);
+          }
+          
+          &.medium {
+            background: linear-gradient(90deg, #ff9800, #ff9800);
+          }
+          
+          &.strong {
+            background: linear-gradient(90deg, #4caf50, #4caf50);
+          }
+          
+          &.veryStrong {
+            background: linear-gradient(90deg, #2196f3, #2196f3);
+          }
+        }
+      }
+      
+      .strength-text {
+        font-size: 12px;
+        line-height: 20px;
+        font-weight: 500;
+        min-width: 45px;
+        text-align: right;
         
         &.weak {
-          background-color: #f44336;
+          color: #f44336;
         }
         
         &.medium {
-          background-color: #ff9800;
+          color: #ff9800;
         }
         
         &.strong {
-          background-color: #4caf50;
+          color: #4caf50;
         }
         
-        &.veryStrong {
-          background-color: #2196f3;
+        &.very-strong {
+          color: #2196f3;
         }
-      }
-    }
-    
-    .strength-text {
-      font-size: 12px;
-      font-weight: 500;
-      
-      &.weak {
-        color: #f44336;
-      }
-      
-      &.medium {
-        color: #ff9800;
-      }
-      
-      &.strong {
-        color: #4caf50;
-      }
-      
-      &.very-strong {
-        color: #2196f3;
       }
     }
   }
   
-  // 密码要求列表样式
+  // 密码要求
   .password-requirements {
-    margin-top: 12px;
-    padding: 12px;
-    background-color: #f5f7fa;
-    border-radius: 6px;
+    margin-top: 10px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
     
-    .requirement {
+    .req-item {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 6px;
-      font-size: 12px;
+      justify-content: center;
+      gap: 4px;
+      padding: 6px 8px;
+      font-size: 11px;
+      line-height: 1;
+      border-radius: 4px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       color: #909399;
-      transition: all 0.3s ease;
+      background: rgba(255, 255, 255, 0.6);
+      height: 24px;
+      border: 1px solid #e8eaed;
       
-      &:last-child {
-        margin-bottom: 0;
+      span {
+        white-space: nowrap;
       }
       
-      i {
-        font-size: 12px;
-        transition: all 0.3s ease;
+      .el-icon {
+        font-size: 11px;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
       }
       
+      // 满足状态
       &.met {
         color: #67c23a;
+        font-weight: 500;
+        background: rgba(103, 194, 58, 0.08);
+        border-color: rgba(103, 194, 58, 0.2);
         
-        i {
-          color: #67c23a;
+        .el-icon {
+          animation: successBounce 0.3s ease;
+        }
+      }
+      
+      // 未满足状态
+      &:not(.met) {
+        .el-icon {
+          animation: subtlePulse 2s ease-in-out infinite;
+        }
+        
+        &:hover {
+          background: rgba(0, 0, 0, 0.02);
+          border-color: #dcdfe6;
         }
       }
     }
@@ -610,6 +650,32 @@ function goToLogin() {
   }
   75% {
     transform: translate(30px, -30px) rotate(270deg);
+  }
+}
+
+// 密码要求图标动画
+@keyframes subtlePulse {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes successBounce {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
   }
 }
 

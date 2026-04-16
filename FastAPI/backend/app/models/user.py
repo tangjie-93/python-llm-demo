@@ -67,7 +67,11 @@ class User(SQLModel, table=True):
     token_expires_at: Optional[str] = Field(default=None, nullable=True)
 
     # 一对多关系：一个用户可以有多篇文章
-    posts: List["Post"] = Relationship(back_populates="author")
+    # 使用 sa_relationship_kwargs 配置级联删除，当删除用户时自动删除关联的文章
+    posts: List["Post"] = Relationship(
+        back_populates="author",
+        sa_relationship_kwargs={"cascade": "all, delete-orphan"}
+    )
 
 
 class UserCreate(SQLModel):

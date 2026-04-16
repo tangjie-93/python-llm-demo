@@ -33,7 +33,7 @@ const userCount = ref(0);
 const itemCount = ref(0);
 
 onMounted(() => {
-  authStore.fetchUserInfo();
+  // authStore.fetchUserInfo();
   // 模拟获取统计数据
   userCount.value = 10;
   itemCount.value = 20;

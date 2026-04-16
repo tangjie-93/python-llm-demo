@@ -47,12 +47,8 @@ axiosInstance.interceptors.response.use(
     let errorMessage = responseData?.message || responseData?.error || responseData?.detail || '请求失败';
     
     if (error.response?.status === 401) {
-      // 检查是否是登录接口的错误
+      // 检查是否是登录接口的错误 - 登录接口不显示错误提示，由组件自己处理
       if (error.config?.url?.includes('/auth/login')) {
-        ElMessage.error({
-          message: errorMessage,
-          duration: 5000
-        });
         return Promise.reject(errorMessage);
       }
       
@@ -68,7 +64,7 @@ axiosInstance.interceptors.response.use(
       }
       
       // 尝试刷新 token
-      if (authStore.refreshToken) {
+      if (authStore.token) {
         isRefreshing = true;
         
         try {
