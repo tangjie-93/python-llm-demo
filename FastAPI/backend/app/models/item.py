@@ -12,6 +12,7 @@
 
 from typing import Optional
 from sqlmodel import SQLModel, Field
+from app.models.user import UserResponse
 
 
 class Item(SQLModel, table=True):
@@ -104,6 +105,7 @@ class ItemResponse(SQLModel):
         price: 价格
         tax: 税费
         owner_id: 所有者用户 ID
+        owner: 所有者信息
     """
     id: int
     title: str
@@ -111,6 +113,7 @@ class ItemResponse(SQLModel):
     price: float
     tax: Optional[float] = None
     owner_id: int
+    owner: Optional[UserResponse] = None
 
     class Config:
         """

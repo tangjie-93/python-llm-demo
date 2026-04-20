@@ -1,6 +1,7 @@
 <template>
-  <div class="items-container">
-    <div class="toolbar">
+  <div class="items-page">
+    <!-- 工具栏 -->
+    <div class="items-page__toolbar">
       <el-button
         type="primary"
         @click="handleAdd"
@@ -13,98 +14,98 @@
         刷新
       </el-button>
     </div>
-    
-    <el-table
-      v-loading="itemStore.loading"
-      :data="itemStore.items"
-      stripe
-    >
-      <el-table-column
-        prop="id"
-        label="ID"
-        width="80"
-      />
-      <el-table-column
-        prop="title"
-        label="名称"
-        width="200"
-      />
-      <el-table-column
-        prop="description"
-        label="描述"
-        min-width="200"
-      />
-      <el-table-column
-        prop="price"
-        label="价格"
-        width="120"
+
+    <!-- 表格 -->
+    <div class="items-page__table">
+      <BaseTable
+        :data="itemStore.items"
+        :loading="itemStore.loading"
+        :border="true"
+        height="100%"
       >
-        <template #default="{ row }">
-          ¥{{ row.price.toFixed(2) }}
-        </template>
-      </el-table-column>
-      <el-table-column
-        prop="tax"
-        label="税费"
-        width="120"
-      >
-        <template #default="{ row }">
+        <el-table-column
+          prop="id"
+          label="ID"
+          width="80"
+        />
+        <el-table-column
+          prop="title"
+          label="名称"
+          min-width="150"
+        />
+        <el-table-column
+          prop="description"
+          label="描述"
+          min-width="200"
+        />
+        <el-table-column
+          prop="price"
+          label="价格"
+          width="120"
+        >
+          <template #default="{ row }">
+            ¥{{ row.price.toFixed(2) }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="tax"
+          label="税费"
+          width="120"
+        >
+          <template #default="{ row }">
           {{ row.tax ? `¥${row.tax.toFixed(2)}` : '-' }}
-        </template>
-      </el-table-column>
-      <el-table-column
-        prop="owner_id"
-        label="所有者ID"
-        width="100"
-      />
-      <el-table-column
-        label="操作"
-        fixed="right"
-        width="200"
-      >
-        <template #default="{ row }">
-          <el-button
-            type="primary"
-            size="small"
-            @click="handleEdit(row)"
-          >
-            编辑
-          </el-button>
-          <el-button
-            type="danger"
-            size="small"
-            @click="handleDelete(row)"
-          >
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    
-    <el-dialog
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="所有者"
+          width="120"
+        >
+          <template #default="{ row }">
+            {{ row.owner?.username || row.owner?.full_name || '-' }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="操作"
+          fixed="right"
+          width="200"
+        >
+          <template #default="{ row }">
+            <el-button
+              type="primary"
+              size="small"
+              @click="handleEdit(row)"
+            >
+              编辑
+            </el-button>
+            <el-button
+              type="danger"
+              size="small"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </BaseTable>
+    </div>
+
+    <!-- 表单对话框 -->
+    <BaseFormDialog
       v-model="dialogVisible"
       :title="isEdit ? '编辑物品' : '新增物品'"
-      width="500px"
+      :form-data="form"
+      :rules="rules"
+      :submit-loading="submitLoading"
+      @submit="handleFormSubmit"
     >
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="rules"
-        label-width="80px"
-      >
-        <el-form-item
-          label="名称"
-          prop="title"
-        >
+      <template #default="{ form }">
+        <el-form-item label="名称" prop="title">
           <el-input
             v-model="form.title"
             placeholder="请输入物品名称"
           />
         </el-form-item>
-        <el-form-item
-          label="描述"
-          prop="description"
-        >
+        <el-form-item label="描述" prop="description">
           <el-input
             v-model="form.description"
             type="textarea"
@@ -112,10 +113,7 @@
             placeholder="请输入物品描述"
           />
         </el-form-item>
-        <el-form-item
-          label="价格"
-          prop="price"
-        >
+        <el-form-item label="价格" prop="price">
           <el-input-number
             v-model="form.price"
             :min="0"
@@ -123,10 +121,7 @@
             placeholder="请输入价格"
           />
         </el-form-item>
-        <el-form-item
-          label="税费"
-          prop="tax"
-        >
+        <el-form-item label="税费" prop="tax">
           <el-input-number
             v-model="form.tax"
             :min="0"
@@ -134,30 +129,18 @@
             placeholder="请输入税费（可选）"
           />
         </el-form-item>
-      </el-form>
-      
-      <template #footer>
-        <el-button @click="dialogVisible = false">
-          取消
-        </el-button>
-        <el-button
-          type="primary"
-          :loading="submitLoading"
-          @click="handleSubmit"
-        >
-          确定
-        </el-button>
       </template>
-    </el-dialog>
+    </BaseFormDialog>
   </div>
 </template>
 
 <script setup lang="ts" name="ItemsView">
 import { ref, reactive, onMounted } from 'vue';
-import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus';
+import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
 import { Plus, Refresh } from '@element-plus/icons-vue';
 import { useItemStore, type Item } from '@/stores/item';
 import { useAuthStore } from '@/stores/auth';
+import { BaseTable, BaseFormDialog } from '@/components/common';
 
 const itemStore = useItemStore();
 const authStore = useAuthStore();
@@ -165,7 +148,6 @@ const authStore = useAuthStore();
 const dialogVisible = ref(false);
 const submitLoading = ref(false);
 const isEdit = ref(false);
-const formRef = ref<FormInstance>();
 const currentId = ref<number | null>(null);
 
 const form = reactive({
@@ -176,7 +158,7 @@ const form = reactive({
   owner_id: 0
 });
 
-const rules: FormRules = {
+const rules = {
   title: [
     { required: true, message: '请输入物品名称', trigger: 'blur' }
   ],
@@ -239,38 +221,44 @@ async function handleDelete(row: Item) {
   }
 }
 
-async function handleSubmit() {
-  if (!formRef.value) return;
+async function handleFormSubmit(formRef: FormInstance | undefined) {
+  if (!formRef) return;
   
-  await formRef.value.validate(async (valid) => {
-    if (valid) {
-      submitLoading.value = true;
-      try {
-        if (isEdit.value && currentId.value) {
-          await itemStore.updateItem(currentId.value, form);
-          ElMessage.success('更新成功');
-        } else {
-          await itemStore.createItem(form);
-          ElMessage.success('创建成功');
-        }
-        dialogVisible.value = false;
-        fetchData();
-      } catch (error: any) {
-        ElMessage.error(error.response?.data?.detail || '操作失败');
-      } finally {
-        submitLoading.value = false;
-      }
+  submitLoading.value = true;
+  try {
+    if (isEdit.value && currentId.value) {
+      await itemStore.updateItem(currentId.value, form);
+      ElMessage.success('更新成功');
+    } else {
+      await itemStore.createItem(form);
+      ElMessage.success('创建成功');
     }
-  });
+    dialogVisible.value = false;
+    fetchData();
+  } catch (error: any) {
+    ElMessage.error(error.response?.data?.detail || '操作失败');
+  } finally {
+    submitLoading.value = false;
+  }
 }
 </script>
 
 <style scoped lang="less">
-.items-container {
+.items-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   padding: 20px;
 
   &__toolbar {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 8px;
+  }
+
+  &__table {
+    flex: 1;
+    overflow: hidden;
   }
 }
 </style>

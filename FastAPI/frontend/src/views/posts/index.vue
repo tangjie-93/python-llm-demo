@@ -1,87 +1,124 @@
 <template>
-  <div class="posts-container">
-    <div class="posts-container__header">
-      <h2>博客文章</h2>
-      <el-button type="primary" @click="handleOpenCreate">
-        <el-icon><Plus /></el-icon>
-        写文章
-      </el-button>
+  <div class="posts-page">
+    <!-- 工具栏 -->
+    <div class="posts-page__toolbar">
+      <BaseFilterForm
+        v-model="filterForm"
+        @filter="handleFilter"
+        @reset="handleResetFilter"
+      >
+        <template #default>
+          <el-form-item label="状态" style="width: 150px;">
+            <el-select
+              v-model="filterForm.is_published"
+              placeholder="全部状态"
+              clearable
+              style="width: 100%;"
+            >
+              <el-option label="已发布" :value="true" />
+              <el-option label="草稿" :value="false" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="标签" style="width: 150px;">
+            <el-select
+              v-model="filterForm.tag_id"
+              placeholder="全部标签"
+              clearable
+              style="width: 100%;"
+            >
+              <el-option
+                v-for="tag in postStore.tags"
+                :key="tag.id"
+                :label="tag.name"
+                :value="tag.id"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="handleOpenCreate">
+              <el-icon><Plus /></el-icon>
+              写文章
+            </el-button>
+          </el-form-item>
+        </template>
+      </BaseFilterForm>
     </div>
 
-    <el-card class="posts-container__filter" shadow="never">
-      <el-form :inline="true" :model="filterForm">
-        <el-form-item label="状态">
-          <el-select
-            v-model="filterForm.is_published"
-            placeholder="全部状态"
-            clearable
-          >
-            <el-option label="已发布" :value="true" />
-            <el-option label="草稿" :value="false" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="标签">
-          <el-select
-            v-model="filterForm.tag_id"
-            placeholder="全部标签"
-            clearable
-          >
-            <el-option
-              v-for="tag in postStore.tags"
-              :key="tag.id"
-              :label="tag.name"
-              :value="tag.id"
-            />
-          </el-select>
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleFilter">筛选</el-button>
-          <el-button @click="handleResetFilter">重置</el-button>
-        </el-form-item>
-      </el-form>
-    </el-card>
-
-    <el-card v-loading="postStore.loading" shadow="never">
-      <el-empty v-if="postStore.posts.length === 0" description="暂无文章" />
-
-      <div v-else class="posts-container__list">
-        <div
-          v-for="post in postStore.posts"
-          :key="post.id"
-          class="posts-container__item"
-          @click="handleViewPost(post.id)"
+    <div class="posts-page__table">
+      <BaseTable
+        :data="postStore.posts"
+        :loading="postStore.loading"
+        :border="true"
+        height="100%"
+      >
+        <el-table-column
+          prop="title"
+          label="标题"
+          min-width="200"
         >
-          <div class="posts-container__post-header">
-            <h3 class="posts-container__title">{{ post.title }}</h3>
-            <el-tag v-if="post.is_published" type="success" size="small">
-              已发布
+          <template #default="{ row }">
+            <div class="post-title" @click="handleViewPost(row.id)">
+              {{ row.title }}
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="is_published"
+          label="状态"
+          width="100"
+        >
+          <template #default="{ row }">
+            <el-tag :type="row.is_published ? 'success' : 'info'" size="small">
+              {{ row.is_published ? '已发布' : '草稿' }}
             </el-tag>
-            <el-tag v-else type="info" size="small">草稿</el-tag>
-          </div>
-
-          <p class="posts-container__summary">{{ post.summary || '暂无摘要' }}</p>
-
-          <div class="posts-container__meta">
-            <span class="posts-container__meta-item">
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="view_count"
+          label="阅读"
+          width="80"
+        >
+          <template #default="{ row }">
+            <span class="meta-info">
               <el-icon><View /></el-icon>
-              {{ post.view_count }} 阅读
+              {{ row.view_count }}
             </span>
-            <span class="meta-item">
-              <el-icon><Clock /></el-icon>
-              {{ formatDate(post.created_at) }}
-            </span>
-            <span class="meta-item">
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="作者"
+          width="120"
+        >
+          <template #default="{ row }">
+            <span class="meta-info">
               <el-icon><User /></el-icon>
-              作者 ID: {{ post.author_id }}
+              ID: {{ row.author_id }}
             </span>
-          </div>
-
-          <div class="posts-container__actions">
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="创建时间"
+          width="180"
+        >
+          <template #default="{ row }">
+            <span class="meta-info">
+              <el-icon><Clock /></el-icon>
+              {{ formatDate(row.created_at) }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="操作"
+          fixed="right"
+          width="280"
+        >
+          <template #default="{ row }">
             <el-button
-              v-if="!post.is_published"
+              v-if="!row.is_published"
               type="success"
               size="small"
-              @click.stop="handlePublish(post.id)"
+              plain
+              @click.stop="handlePublish(row.id)"
             >
               发布
             </el-button>
@@ -89,29 +126,32 @@
               v-else
               type="warning"
               size="small"
-              @click.stop="handleUnpublish(post.id)"
+              plain
+              @click.stop="handleUnpublish(row.id)"
             >
               取消发布
             </el-button>
             <el-button
               type="primary"
               size="small"
-              @click.stop="handleEdit(post)"
+              plain
+              @click.stop="handleEdit(row)"
             >
               编辑
             </el-button>
             <el-button
               type="danger"
               size="small"
-              @click.stop="handleDelete(post.id)"
+              plain
+              @click.stop="handleDelete(row.id)"
             >
               删除
             </el-button>
-          </div>
-        </div>
-      </div>
+          </template>
+        </el-table-column>
+      </BaseTable>
 
-      <div class="posts-container__pagination">
+      <div class="posts-page__pagination">
         <el-pagination
           v-model:current-page="pagination.page"
           v-model:page-size="pagination.limit"
@@ -122,27 +162,25 @@
           @current-change="handlePageChange"
         />
       </div>
-    </el-card>
+    </div>
 
-    <el-dialog
+    <BaseFormDialog
       v-model="dialogVisible"
       :title="isEdit ? '编辑文章' : '写文章'"
+      :form-data="postForm"
+      :rules="formRules"
+      :submit-loading="isSubmitting"
       width="800px"
-      destroy-on-close
+      @submit="handleFormSubmit"
     >
-      <el-form
-        ref="formRef"
-        :model="postForm"
-        label-width="80px"
-        :rules="formRules"
-      >
+      <template #default="{ form }">
         <el-form-item label="标题" prop="title">
-          <el-input v-model="postForm.title" placeholder="请输入文章标题" />
+          <el-input v-model="form.title" placeholder="请输入文章标题" />
         </el-form-item>
 
         <el-form-item label="摘要">
           <el-input
-            v-model="postForm.summary"
+            v-model="form.summary"
             type="textarea"
             :rows="2"
             placeholder="请输入文章摘要（可选）"
@@ -151,7 +189,7 @@
 
         <el-form-item label="内容" prop="content">
           <el-input
-            v-model="postForm.content"
+            v-model="form.content"
             type="textarea"
             :rows="10"
             placeholder="请输入文章内容"
@@ -160,7 +198,7 @@
 
         <el-form-item label="标签">
           <el-select
-            v-model="postForm.tag_ids"
+            v-model="form.tag_ids"
             multiple
             placeholder="选择标签"
             style="width: 100%"
@@ -176,64 +214,18 @@
 
         <el-form-item label="状态">
           <el-switch
-            v-model="postForm.is_published"
+            v-model="form.is_published"
             active-text="立即发布"
             inactive-text="保存为草稿"
           />
         </el-form-item>
-      </el-form>
-
-      <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit" :loading="isSubmitting">
-          {{ isEdit ? '保存' : '创建' }}
-        </el-button>
       </template>
-    </el-dialog>
+    </BaseFormDialog>
 
-    <el-dialog
+    <PostDetailDialog
       v-model="detailVisible"
-      title="文章详情"
-      width="800px"
-      destroy-on-close
-    >
-      <div v-if="postStore.currentPost" class="post-detail">
-        <h2>{{ postStore.currentPost.title }}</h2>
-        <div class="post-detail__meta">
-          <el-tag v-if="postStore.currentPost.is_published" type="success">
-            已发布
-          </el-tag>
-          <el-tag v-else type="info">草稿</el-tag>
-          <span>
-            <el-icon><View /></el-icon>
-            {{ postStore.currentPost.view_count }} 阅读
-          </span>
-          <span>
-            <el-icon><Clock /></el-icon>
-            {{ formatDate(postStore.currentPost.created_at) }}
-          </span>
-          <span v-if="postStore.currentPost.author">
-            <el-icon><User /></el-icon>
-            {{ postStore.currentPost.author.username }}
-          </span>
-        </div>
-
-        <div class="post-detail__tags" v-if="postStore.currentPost.tags?.length">
-          <el-tag
-            v-for="tag in postStore.currentPost.tags"
-            :key="tag.id"
-            size="small"
-            class="tag-item"
-          >
-            {{ tag.name }}
-          </el-tag>
-        </div>
-
-        <el-divider />
-
-        <div class="post-detail__content">{{ postStore.currentPost.content }}</div>
-      </div>
-    </el-dialog>
+      :post="postStore.currentPost"
+    />
   </div>
 </template>
 
@@ -244,6 +236,8 @@ import { Plus, View, Clock, User } from '@element-plus/icons-vue';
 import { usePostStore, type CreatePostData, type UpdatePostData, type PostSimple, type Tag } from '@/stores/post';
 import { useAuthStore } from '@/stores/auth';
 import type { PostFilterParams } from '@/types/post';
+import { BaseFormDialog, BaseFilterForm, BaseTable } from '@/components/common';
+import PostDetailDialog from './components/postDetailDialog.vue';
 
 const postStore = usePostStore();
 const authStore = useAuthStore();
@@ -263,7 +257,6 @@ const dialogVisible = ref(false);
 const detailVisible = ref(false);
 const isEdit = ref(false);
 const isSubmitting = ref(false);
-const formRef = ref<FormInstance>();
 
 const postForm = reactive<CreatePostData & { id?: number }>({
   title: '',
@@ -347,9 +340,8 @@ async function handleEdit(post: PostSimple): Promise<void> {
   dialogVisible.value = true;
 }
 
-async function handleSubmit(): Promise<void> {
-  const valid = await formRef.value?.validate().catch(() => false);
-  if (!valid) return;
+async function handleFormSubmit(formRef: FormInstance | undefined): Promise<void> {
+  if (!formRef) return;
 
   isSubmitting.value = true;
   try {
@@ -431,91 +423,51 @@ onMounted(() => {
 </script>
 
 <style scoped lang="less">
-.posts-container {
+.posts-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   padding: 20px;
 
-  &__header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-
-    h2 {
-      margin: 0;
-      color: #303133;
-    }
+  &__toolbar {
+    margin-bottom: 16px;
   }
 
-  &__filter {
-    margin-bottom: 20px;
-  }
-
-  &__list {
+  &__table {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 16px;
-  }
-
-  &__item {
-    padding: 20px;
-    border: 1px solid #ebeef5;
+    background-color: white;
     border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s;
-
-    &:hover {
-      box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-      border-color: #409eff;
-    }
-  }
-
-  &__post-header {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-bottom: 12px;
-  }
-
-  &__title {
-    margin: 0;
-    font-size: 18px;
-    color: #303133;
-    flex: 1;
-  }
-
-  &__summary {
-    color: #606266;
-    margin: 0 0 12px 0;
-    line-height: 1.6;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  &__meta {
-    display: flex;
-    gap: 20px;
-    color: #909399;
-    font-size: 14px;
-    margin-bottom: 12px;
-
-    &-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-  }
-
-  &__actions {
-    display: flex;
-    gap: 8px;
+    padding: 16px;
   }
 
   &__pagination {
-    margin-top: 20px;
+    margin-top: 16px;
     display: flex;
     justify-content: flex-end;
+  }
+}
+
+.post-title {
+  color: #409eff;
+  cursor: pointer;
+  font-weight: 500;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.meta-info {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #909399;
+  font-size: 13px;
+  
+  .el-icon {
+    color: #c0c4cc;
   }
 }
 

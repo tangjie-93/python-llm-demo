@@ -1,6 +1,7 @@
 <template>
-  <div class="users-container">
-    <div class="users-container__toolbar">
+  <div class="users-page">
+    <!-- 工具栏 -->
+    <div class="users-page__toolbar">
       <el-button
         type="primary"
         @click="handleAdd"
@@ -13,100 +14,94 @@
         刷新
       </el-button>
     </div>
-    
-    <el-table
-      v-loading="userStore.loading"
-      :data="userStore.users"
-      stripe
-    >
-      <el-table-column
-        prop="id"
-        label="ID"
-        width="80"
-      />
-      <el-table-column
-        prop="username"
-        label="用户名"
-        width="150"
-      />
-      <el-table-column
-        prop="email"
-        label="邮箱"
-        width="200"
-      />
-      <el-table-column
-        prop="full_name"
-        label="全名"
-        width="150"
-      />
-      <el-table-column
-        prop="is_active"
-        label="状态"
-        width="100"
+
+    <!-- 表格 -->
+    <div class="users-page__table">
+      <BaseTable
+        :data="userStore.users"
+        :loading="userStore.loading"
+        :border="true"
+        height="100%"
       >
-        <template #default="{ row }">
-          <el-tag :type="row.is_active ? 'success' : 'danger'">
-            {{ row.is_active ? '激活' : '禁用' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column
-        label="操作"
-        fixed="right"
-        width="200"
-      >
-        <template #default="{ row }">
-          <el-button
-            type="primary"
-            size="small"
-            @click="handleEdit(row)"
-          >
-            编辑
-          </el-button>
-          <el-button
-            type="danger"
-            size="small"
-            @click="handleDelete(row)"
-          >
-            删除
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
-    
-    <el-dialog
+        <el-table-column
+          prop="id"
+          label="ID"
+          width="80"
+        />
+        <el-table-column
+          prop="username"
+          label="用户名"
+          min-width="120"
+        />
+        <el-table-column
+          prop="email"
+          label="邮箱"
+          min-width="200"
+        />
+        <el-table-column
+          prop="full_name"
+          label="全名"
+          min-width="120"
+        />
+        <el-table-column
+          prop="is_active"
+          label="状态"
+          width="100"
+        >
+          <template #default="{ row }">
+            <el-tag :type="row.is_active ? 'success' : 'danger'">
+              {{ row.is_active ? '激活' : '禁用' }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column
+          label="操作"
+          fixed="right"
+          width="200"
+        >
+          <template #default="{ row }">
+            <el-button
+              type="primary"
+              size="small"
+              @click="handleEdit(row)"
+            >
+              编辑
+            </el-button>
+            <el-button
+              type="danger"
+              size="small"
+              @click="handleDelete(row)"
+            >
+              删除
+            </el-button>
+          </template>
+        </el-table-column>
+      </BaseTable>
+    </div>
+
+    <!-- 表单对话框 -->
+    <BaseFormDialog
       v-model="dialogVisible"
       :title="isEdit ? '编辑用户' : '新增用户'"
-      width="500px"
+      :form-data="form"
+      :rules="rules"
+      :submit-loading="submitLoading"
+      @submit="handleFormSubmit"
     >
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="rules"
-        label-width="80px"
-      >
-        <el-form-item
-          label="用户名"
-          prop="username"
-        >
+      <template #default="{ form }">
+        <el-form-item label="用户名" prop="username">
           <el-input
             v-model="form.username"
             placeholder="请输入用户名"
           />
         </el-form-item>
-        <el-form-item
-          label="邮箱"
-          prop="email"
-        >
+        <el-form-item label="邮箱" prop="email">
           <el-input
             v-model="form.email"
             placeholder="请输入邮箱"
           />
         </el-form-item>
-        <el-form-item
-          label="全名"
-          prop="full_name"
-        >
+        <el-form-item label="全名" prop="full_name">
           <el-input
             v-model="form.full_name"
             placeholder="请输入全名"
@@ -123,36 +118,23 @@
             placeholder="请输入密码"
           />
         </el-form-item>
-      </el-form>
-      
-      <template #footer>
-        <el-button @click="dialogVisible = false">
-          取消
-        </el-button>
-        <el-button
-          type="primary"
-          :loading="submitLoading"
-          @click="handleSubmit"
-        >
-          确定
-        </el-button>
       </template>
-    </el-dialog>
+    </BaseFormDialog>
   </div>
 </template>
 
 <script setup lang="ts" name="UsersView">
 import { ref, reactive, onMounted } from 'vue';
-import { ElMessage, ElMessageBox, FormInstance, FormRules } from 'element-plus';
+import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus';
 import { Plus, Refresh } from '@element-plus/icons-vue';
 import { useUserStore, type User, type UserCreate } from '@/stores/user';
+import { BaseTable, BaseFormDialog } from '@/components/common';
 
 const userStore = useUserStore();
 
 const dialogVisible = ref(false);
 const submitLoading = ref(false);
 const isEdit = ref(false);
-const formRef = ref<FormInstance>();
 const currentId = ref<number | null>(null);
 
 const form = reactive({
@@ -162,7 +144,7 @@ const form = reactive({
   password: ''
 });
 
-const rules: FormRules = {
+const rules = {
   username: [
     { required: true, message: '请输入用户名', trigger: 'blur' }
   ],
@@ -222,40 +204,46 @@ async function handleDelete(row: User) {
   }
 }
 
-async function handleSubmit() {
-  if (!formRef.value) return;
+async function handleFormSubmit(formRef: FormInstance | undefined) {
+  if (!formRef) return;
   
-  await formRef.value.validate(async (valid) => {
-    if (valid) {
-      submitLoading.value = true;
-      try {
-        if (isEdit.value && currentId.value) {
-          await userStore.updateUser(currentId.value, form);
-          ElMessage.success('更新成功');
-        } else {
-          await userStore.createUser(form as UserCreate);
-          ElMessage.success('创建成功');
-        }
-        dialogVisible.value = false;
-        fetchData();
-      } catch (error: any) {
-        const errorMessage = error.response?.data?.message || error.response?.data?.error || error.response?.data?.detail || '操作失败';
-        ElMessage.error(errorMessage);
-        console.error('操作失败:', error);
-      } finally {
-        submitLoading.value = false;
-      }
+  submitLoading.value = true;
+  try {
+    if (isEdit.value && currentId.value) {
+      await userStore.updateUser(currentId.value, form);
+      ElMessage.success('更新成功');
+    } else {
+      await userStore.createUser(form as UserCreate);
+      ElMessage.success('创建成功');
     }
-  });
+    dialogVisible.value = false;
+    fetchData();
+  } catch (error: any) {
+    const errorMessage = error.response?.data?.message || error.response?.data?.error || error.response?.data?.detail || '操作失败';
+    ElMessage.error(errorMessage);
+    console.error('操作失败:', error);
+  } finally {
+    submitLoading.value = false;
+  }
 }
 </script>
 
 <style scoped lang="less">
-.users-container {
+.users-page {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
   padding: 20px;
 
   &__toolbar {
-    margin-bottom: 20px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 8px;
+  }
+
+  &__table {
+    flex: 1;
+    overflow: hidden;
   }
 }
 </style>

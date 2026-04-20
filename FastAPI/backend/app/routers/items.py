@@ -20,6 +20,7 @@ from typing import List, Optional
 from app.core.database import get_session
 from app.core.response import success_response, error_response
 from app.models.item import Item, ItemCreate, ItemUpdate, ItemResponse
+from app.models.user import User
 from app.models.response import ApiResponse
 
 # 创建 APIRouter 实例
@@ -50,6 +51,9 @@ def get_items(
         ApiResponse[List[ItemResponse]]: 包含物品列表的统一响应
     """
     items = session.exec(select(Item).offset(skip).limit(limit)).all()
+    # 为每个物品加载 owner 信息
+    for item in items:
+        item.owner = session.get(User, item.owner_id)
     return success_response(data=items, message="获取物品列表成功")
 
 

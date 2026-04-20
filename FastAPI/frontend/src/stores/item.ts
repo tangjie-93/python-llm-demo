@@ -9,6 +9,13 @@ export interface Item {
   price: number
   tax?: number
   owner_id: number
+  owner?: {
+    id: number
+    username: string
+    email: string
+    full_name?: string
+    is_active: boolean
+  }
 }
 
 export const useItemStore = defineStore('item', () => {
