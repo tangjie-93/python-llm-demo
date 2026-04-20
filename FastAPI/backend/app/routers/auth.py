@@ -114,8 +114,9 @@ login_tracker = LoginAttemptTracker()
 pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 # OAuth2PasswordBearer 用于从请求头中提取 token
-# tokenUrl 指定了登录接口的 URL（相对路径）
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/token")
+# tokenUrl 指定了登录接口的 URL（用于 Swagger UI 的认证按钮）
+# 注意：这里使用 /api/auth/login 而不是 /api/auth/token，因为登录接口是 /api/auth/login
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 
 
 # ==================== 数据模型 ====================
