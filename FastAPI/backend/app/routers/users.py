@@ -22,7 +22,7 @@ from app.core.database import get_session
 from app.core.response import success_response, error_response
 from app.models.user import User, UserCreate, UserUpdate, UserResponse
 from app.models.response import ApiResponse
-from app.routers.auth import get_password_hash
+from app.utils.auth import get_password_hash
 
 # 创建 APIRouter 实例
 router = APIRouter()
