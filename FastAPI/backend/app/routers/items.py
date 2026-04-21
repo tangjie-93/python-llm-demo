@@ -55,7 +55,7 @@ def get_items(
     items_with_owner = []
     for item in items:
         owner = session.get(User, item.owner_id)
-        # 使用 model_validate 构建包含 owner 的响应对象
+        # 这里使用 model_dump() 将item对象转换为字典（字典可以动态添加键）
         item_data = item.model_dump()
         item_data['owner'] = owner.model_dump() if owner else None
         items_with_owner.append(item_data)
