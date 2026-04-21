@@ -19,8 +19,10 @@ from app.core.database import get_session
 from app.core.response import success_response, error_response
 from app.models.post import (
     Post, PostCreate, PostUpdate, PostResponse, PostSimpleResponse,
-    Tag, TagCreate, TagUpdate, TagResponse, TagWithPosts,
-    UserSimpleResponse
+    UserSimpleResponse, PostTagLink
+)
+from app.models.tag import (
+    Tag, TagCreate, TagUpdate, TagResponse, TagWithPosts
 )
 from app.models.user import User
 from app.models.response import ApiResponse
