@@ -4,7 +4,7 @@ import api, { getErrorMessage } from '@/utils/api';
 import { LoginResponse } from '@/types/auth';
 
 export const useAuthStore = defineStore('auth', () => {
-  const token = ref<string | null>(null);
+  const token = ref<string | null>(localStorage.getItem('access_token') || null);
   const userInfo = ref<{ id: number; username: string; email: string } | null>(null);
 
   const isLoggedIn = computed(() => !!token.value);
@@ -20,6 +20,7 @@ export const useAuthStore = defineStore('auth', () => {
       throw new Error('登录失败');
     }
     token.value = data.access_token;
+    localStorage.setItem('access_token', data.access_token);
     // refresh_token 现在存储在 HttpOnly Cookie 中，不需要在前端存储
     await fetchUserInfo();
   }
@@ -43,6 +44,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const data = await api.post('/auth/refresh', {});
       token.value = data.access_token;
+      localStorage.setItem('access_token', data.access_token);
       return true;
     } catch (error) {
       console.error('刷新 token 失败:', getErrorMessage(error));
@@ -54,6 +56,7 @@ export const useAuthStore = defineStore('auth', () => {
   function logout() {
     token.value = null;
     userInfo.value = null;
+    localStorage.removeItem('access_token');
     // 调用后端登出接口清除 Cookie
     api.post('/auth/logout').catch(() => {});
   }

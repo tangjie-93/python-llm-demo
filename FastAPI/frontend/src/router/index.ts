@@ -56,8 +56,23 @@ const router = createRouter({
   routes
 });
 
-router.beforeEach((to, _from, next) => {
+router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore();
+  
+  // 如果有 token 但没有用户信息，尝试获取用户信息
+  if (authStore.token && !authStore.userInfo) {
+    try {
+      await authStore.fetchUserInfo();
+    } catch (error) {
+      // 获取用户信息失败，可能是 token 过期，尝试刷新
+      const refreshed = await authStore.refreshTokenFunc();
+      if (!refreshed) {
+        next('/login');
+        return;
+      }
+    }
+  }
+  
   if (to.meta.requiresAuth && !authStore.token) {
     next('/login');
   } else {
