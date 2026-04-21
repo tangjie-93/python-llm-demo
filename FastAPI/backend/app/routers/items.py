@@ -51,10 +51,15 @@ def get_items(
         ApiResponse[List[ItemResponse]]: 包含物品列表的统一响应
     """
     items = session.exec(select(Item).offset(skip).limit(limit)).all()
-    # 为每个物品加载 owner 信息
+    # 为每个物品加载 owner 信息并构建响应
+    items_with_owner = []
     for item in items:
-        item.owner = session.get(User, item.owner_id)
-    return success_response(data=items, message="获取物品列表成功")
+        owner = session.get(User, item.owner_id)
+        # 使用 model_validate 构建包含 owner 的响应对象
+        item_data = item.model_dump()
+        item_data['owner'] = owner.model_dump() if owner else None
+        items_with_owner.append(item_data)
+    return success_response(data=items_with_owner, message="获取物品列表成功")
 
 
 @router.get("/{item_id}", response_model=ApiResponse[ItemResponse])
