@@ -13,40 +13,18 @@
 - Post (N) >----< Tag (N): 一篇文章可以有多个标签，一个标签可以属于多篇文章
 """
 
-from typing import Optional, List
+from typing import Optional, List, TYPE_CHECKING
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship
 
-from app.models.tag import Tag, TagResponse, TagWithPosts
+# 直接导入 PostTagLink，因为它不依赖 Post（只是简单的关联表）
+from app.models.tag import PostTagLink
+
+if TYPE_CHECKING:
+    from app.models.tag import Tag, TagResponse, TagWithPosts
 
 
-# ==================== 关联表（多对多关系）====================
-
-class PostTagLink(SQLModel, table=True):
-    """
-    文章和标签的关联表
-
-    实现 Post 和 Tag 的多对多关系。
-
-    Attributes:
-        post_id: 文章 ID，外键关联到 post 表
-        tag_id: 标签 ID，外键关联到 tag 表
-    """
-    __tablename__ = "post_tag_links"
-
-    post_id: Optional[int] = Field(
-        default=None,
-        foreign_key="posts.id",
-        primary_key=True
-    )
-    tag_id: Optional[int] = Field(
-        default=None,
-        foreign_key="tags.id",
-        primary_key=True
-    )
-
-
-# ==================== 数据库表模型 ====================
+# ==================== 数据库表模型 =====================
 
 class Post(SQLModel, table=True):
     """
@@ -188,7 +166,8 @@ class PostResponse(PostSimpleResponse):
     """
     content: str
     author: "UserSimpleResponse"
-    tags: List[TagResponse] = []
+    # 类型检查器会报错，因为 TagResponse 在运行时未定义，需要忽略类型检查
+    tags: List["TagResponse"] = []  # type: ignore[name-defined] 告诉类型检查器"我知道这个问题，忽略它"
 
 
 # ----- 作者简化信息模型 -----
@@ -213,5 +192,8 @@ class UserSimpleResponse(SQLModel):
 
 
 # 更新前向引用
+# 所有模块加载完成后，调用 model_rebuild() 解析字符串引用
+from app.models.tag import TagWithPosts, TagResponse
+
 TagWithPosts.model_rebuild()
 PostResponse.model_rebuild()

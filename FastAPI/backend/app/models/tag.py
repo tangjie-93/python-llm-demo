@@ -12,12 +12,38 @@
 - Post (N) >----< Tag (N): 一篇文章可以有多个标签，一个标签可以属于多篇文章
 """
 
-from typing import Optional, List, TYPE_CHECKING
+from typing import Optional, List
 from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship
 
-if TYPE_CHECKING:
-    from app.models.post import Post
+
+# ==================== 关联表（多对多关系）====================
+
+class PostTagLink(SQLModel, table=True):
+    """
+    文章和标签的关联表
+
+    实现 Post 和 Tag 的多对多关系。
+
+    Attributes:
+        post_id: 文章 ID，外键关联到 post 表
+        tag_id: 标签 ID，外键关联到 tag 表
+    """
+    __tablename__ = "post_tag_links"
+
+    post_id: Optional[int] = Field(
+        default=None,
+        foreign_key="posts.id",
+        primary_key=True
+    )
+    tag_id: Optional[int] = Field(
+        default=None,
+        foreign_key="tags.id",
+        primary_key=True
+    )
+
+
+# ==================== 标签模型 =====================
 
 
 class Tag(SQLModel, table=True):
@@ -52,7 +78,7 @@ class Tag(SQLModel, table=True):
     # 多对多关系：一个标签可以属于多篇文章
     posts: List["Post"] = Relationship(
         back_populates="tags",
-        link_model="PostTagLink"
+        link_model=PostTagLink
     )
 
 
@@ -113,4 +139,5 @@ class TagWithPosts(TagResponse):
     posts: List["PostSimpleResponse"] = []
 
 
-# 前向引用会在 post.py 中统一处理
+# 更新前向引用
+# PostSimpleResponse 会在 post.py 中导入后调用 model_rebuild()
