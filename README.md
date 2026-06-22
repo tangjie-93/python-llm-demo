@@ -80,3 +80,57 @@ pip install requests
 deactivate
 ```
 
+***
+
+## 6. DeepSeek / OpenAI 模型切换配置
+
+`baseDemo` 和 `langchain-demo` 已支持通过环境变量切换模型提供商。
+
+### 6.1 baseDemo
+
+```bash
+cd baseDemo
+cp .env.example .env
+```
+
+编辑 `.env`：
+
+```bash
+MODEL_PROVIDER=deepseek
+DEEPSEEK_API_KEY=your_deepseek_api_key
+DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_BASE_URL=https://api.deepseek.com
+```
+
+运行聊天或 Agent：
+
+```bash
+python deepseek_chat.py
+python agent_demo.py
+```
+
+页面右侧可以在 `deepseek` 和 `openai` 之间切换。
+
+### 6.2 langchain-demo
+
+```bash
+cd langchain-demo
+cp .env.example .env
+```
+
+编辑 `.env`：
+
+```bash
+MODEL_PROVIDER=deepseek
+DEEPSEEK_API_KEY=your_deepseek_api_key
+DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
+```
+
+运行：
+
+```bash
+python app.py
+```
+
+页面顶部的模型选择器可以切换 `deepseek` / `openai`。

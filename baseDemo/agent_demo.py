@@ -12,7 +12,6 @@ ReAct 框架说明：
 """
 
 import gradio as gr
-from openai import OpenAI
 import os
 import json
 import ast
@@ -22,6 +21,7 @@ from datetime import datetime
 import requests
 import textwrap
 from tavily import TavilyClient
+from model_config import get_client, get_model_choices, get_model_config
 
 
 class SafeMathEvaluator(ast.NodeVisitor):
@@ -113,13 +113,6 @@ def safe_eval(expression: str) -> float:
 # 加载环境变量
 load_dotenv()
 
-# 初始化 DeepSeek 客户端
-client = OpenAI(
-    api_key=os.getenv("DEEPSEEK_API_KEY"),
-    base_url="https://api.deepseek.com"
-)
-
-
 class Tool:
     """工具基类"""
     def __init__(self, name: str, description: str, func: Callable):
@@ -137,7 +130,7 @@ class Tool:
 
 class Agent:
     """
-    DeepSeek Agent 实现
+    多模型 Agent 实现
     基于 ReAct 模式（Reasoning + Acting + Observation）
     
     ReAct 完整流程：
@@ -351,7 +344,7 @@ class Agent:
         
         return thought, action, params
     
-    def run_stream(self, user_input: str, system_prompt: str = ""):
+    def run_stream(self, user_input: str, system_prompt: str = "", provider: str = None):
         """
         运行 Agent（流式返回，完整的 ReAct 流程）
         
@@ -388,6 +381,8 @@ class Agent:
         Yields:
             流式返回的回复片段，包含完整的 ReAct 流程
         """
+        config = get_model_config(provider)
+        client = get_client(provider)
         # =====================================================================
         # Step 0: 准备阶段 - 构建系统提示词和消息列表
         # =====================================================================
@@ -427,7 +422,7 @@ class Agent:
         try:
             # 第 1 次调用大模型：分析需求，决定是否使用工具
             response = client.chat.completions.create(
-                model="deepseek-chat",
+                model=config.model,
                 messages=messages,
                 temperature=0.7,
                 max_tokens=2000,
@@ -502,7 +497,7 @@ class Agent:
                     
                     # 第 2 次调用大模型：基于观察结果生成最终回复
                     final_response = client.chat.completions.create(
-                        model="deepseek-chat",
+                        model=config.model,
                         messages=final_messages,
                         temperature=0.7,
                         max_tokens=2000,
@@ -555,7 +550,7 @@ class Agent:
 agent = Agent()
 
 
-def chat_with_agent(message, history, system_prompt):
+def chat_with_agent(message, history, system_prompt, provider):
     """
     与 Agent 对话（流式）
     
@@ -563,6 +558,7 @@ def chat_with_agent(message, history, system_prompt):
         message: 用户消息
         history: 对话历史（Gradio 格式）
         system_prompt: 系统提示词
+        provider: 模型提供商
     
     Yields:
         更新后的历史和空字符串
@@ -590,7 +586,7 @@ def chat_with_agent(message, history, system_prompt):
     
     # 流式获取 Agent 回复
     partial_response = ""
-    for partial_reply in agent.run_stream(message, system_prompt):
+    for partial_reply in agent.run_stream(message, system_prompt, provider):
         partial_response = partial_reply
         # 更新最后一条助手消息
         if len(history) > 0 and history[-1].get("role") == "assistant":
@@ -607,8 +603,8 @@ def clear_chat():
 
 
 # 创建 Gradio 界面
-with gr.Blocks(title="DeepSeek Agent Demo") as demo:
-    gr.Markdown("# 🤖 DeepSeek Agent 智能体演示")
+with gr.Blocks(title="Multi Model Agent Demo") as demo:
+    gr.Markdown("# 🤖 多模型 Agent 智能体演示")
     gr.Markdown("基于完整 ReAct 模式的智能体，支持工具调用（计算器、天气查询、时间、搜索）")
     
     with gr.Row():
@@ -633,6 +629,12 @@ with gr.Blocks(title="DeepSeek Agent Demo") as demo:
         # 右侧：设置区域
         with gr.Column(scale=1):
             gr.Markdown("### ⚙️ 设置")
+            
+            provider = gr.Dropdown(
+                choices=get_model_choices(),
+                value=get_model_config().provider,
+                label="模型提供商"
+            )
             
             system_prompt = gr.Textbox(
                 label="系统提示词",
@@ -681,13 +683,13 @@ with gr.Blocks(title="DeepSeek Agent Demo") as demo:
     # 事件绑定
     send_btn.click(
         chat_with_agent,
-        inputs=[msg_input, chatbot, system_prompt],
+        inputs=[msg_input, chatbot, system_prompt, provider],
         outputs=[chatbot, msg_input]
     )
     
     msg_input.submit(
         chat_with_agent,
-        inputs=[msg_input, chatbot, system_prompt],
+        inputs=[msg_input, chatbot, system_prompt, provider],
         outputs=[chatbot, msg_input]
     )
     

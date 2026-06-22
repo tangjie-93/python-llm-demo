@@ -25,24 +25,26 @@ load_dotenv()
 
 def get_llm(model_name="deepseek", streaming=False):
     """获取语言模型"""
-    api_key = os.getenv("DEEPSEEK_API_KEY", "") or os.getenv("OPENAI_API_KEY", "")
-    if model_name == "deepseek":
+    selected_model = (model_name or os.getenv("MODEL_PROVIDER") or "deepseek").strip().lower()
+    if selected_model == "deepseek":
         # 使用 `DeepSeek` API（`OpenAI` 兼容）
         return ChatOpenAI(
-            model="deepseek-chat",
+            model=os.getenv("DEEPSEEK_MODEL", "deepseek-chat"),
             temperature=0.7,
-            api_key=api_key,
-            base_url="https://api.deepseek.com/v1",
+            api_key=os.getenv("DEEPSEEK_API_KEY", ""),
+            base_url=os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"),
             streaming=streaming
         )
-    else:
+    if selected_model == "openai":
         # 使用 `OpenAI` API
         return ChatOpenAI(
-            model="gpt-3.5-turbo",
+            model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
             temperature=0.7,
-            api_key=api_key,
+            api_key=os.getenv("OPENAI_API_KEY", ""),
+            base_url=os.getenv("OPENAI_BASE_URL") or None,
             streaming=streaming
         )
+    raise ValueError(f"不支持的模型提供商: {selected_model}")
 
 def basic_concepts_demo(model_name, streaming=False):
     """基础概念示例"""

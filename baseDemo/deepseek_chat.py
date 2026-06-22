@@ -1,27 +1,20 @@
 # -*- coding: utf-8 -*-
 """
-DeepSeek 聊天助手
+多模型聊天助手
 基于 Gradio 和 OpenAI SDK 实现的智能对话界面
 支持流式输出，实时显示 AI 回复
 """
 
 import gradio as gr
-from openai import OpenAI
-import os
 from dotenv import load_dotenv
+from model_config import get_client, get_model_choices, get_model_config
 
 # 加载环境变量文件
 load_dotenv()
 
-# 初始化 OpenAI 客户端（用于调用 DeepSeek API）
-client = OpenAI(
-    api_key=os.getenv("DEEPSEEK_API_KEY"),  # 从环境变量获取 API Key
-    base_url="https://api.deepseek.com"    # DeepSeek API 基础 URL
-)
-
 
 # 流式获取 AI 回复
-def chat_response(message, history, system_prompt, temperature, max_tokens):
+def chat_response(message, history, system_prompt, temperature, max_tokens, provider):
     """
     通过 DeepSeek API 获取流式响应
     
@@ -31,6 +24,7 @@ def chat_response(message, history, system_prompt, temperature, max_tokens):
         system_prompt: 系统提示词
         temperature: 控制回答随机性 (0-2)
         max_tokens: 最大生成令牌数
+        provider: 模型提供商
     
     Yields:
         流式返回 AI 的部分回复内容
@@ -54,9 +48,11 @@ def chat_response(message, history, system_prompt, temperature, max_tokens):
     messages.append({"role": "user", "content": message})
     
     try:
+        config = get_model_config(provider)
+        client = get_client(provider)
         # 发送流式请求
         response = client.chat.completions.create(
-            model="deepseek-chat",  # 使用 DeepSeek 聊天模型
+            model=config.model,     # 使用当前选择的模型
             messages=messages,      # 完整的消息列表
             temperature=temperature,  # 温度参数
             max_tokens=max_tokens,  # 最大令牌数
@@ -88,10 +84,10 @@ def clear_history():
 
 
 # 创建 Gradio 应用界面
-with gr.Blocks(title="DeepSeek Chat Demo") as demo:
+with gr.Blocks(title="Multi Model Chat Demo") as demo:
     # 标题和描述
-    gr.Markdown("# 🤖 DeepSeek 聊天助手")
-    gr.Markdown("基于 DeepSeek 大模型的智能对话演示")
+    gr.Markdown("# 🤖 多模型聊天助手")
+    gr.Markdown("支持通过右侧下拉框切换 DeepSeek / OpenAI")
     
     # 主布局：左右两列
     with gr.Row():
@@ -118,6 +114,12 @@ with gr.Blocks(title="DeepSeek Chat Demo") as demo:
         # 右侧：参数设置（占 1/4 宽度）
         with gr.Column(scale=1):
             gr.Markdown("### ⚙️ 参数设置")
+            
+            provider = gr.Dropdown(
+                choices=get_model_choices(),
+                value=get_model_config().provider,
+                label="模型提供商"
+            )
             
             # 系统提示词设置
             system_prompt = gr.Textbox(
@@ -152,7 +154,8 @@ with gr.Blocks(title="DeepSeek Chat Demo") as demo:
                 """
                 ### ℹ️ 使用说明
                 
-                1. 设置环境变量 `DEEPSEEK_API_KEY`
+                1. 设置环境变量 `MODEL_PROVIDER=deepseek`
+                2. 设置环境变量 `DEEPSEEK_API_KEY`
                 2. 在左侧输入框输入问题
                 3. 点击发送或按 Enter 键
                 4. 可调整右侧参数优化回答
@@ -162,7 +165,9 @@ with gr.Blocks(title="DeepSeek Chat Demo") as demo:
                 访问 [DeepSeek 官网](https://platform.deepseek.com/) 注册并获取 API Key
                 
                 ```bash
+                export MODEL_PROVIDER="deepseek"
                 export DEEPSEEK_API_KEY="your-api-key"
+                export DEEPSEEK_MODEL="deepseek-chat"
                 ```
                 """
             )
@@ -182,7 +187,7 @@ with gr.Blocks(title="DeepSeek Chat Demo") as demo:
         return "", history + [{"role": "user", "content": user_message}, {"role": "assistant", "content": ""}]
     
     # 事件处理：获取 AI 回复
-    def bot_message(history, system_prompt, temperature, max_tokens):
+    def bot_message(history, system_prompt, temperature, max_tokens, provider):
         """
         处理获取 AI 回复事件
         
@@ -199,7 +204,7 @@ with gr.Blocks(title="DeepSeek Chat Demo") as demo:
         user_message = history[-2]["content"]
         
         # 调用 chat_response 函数获取流式响应
-        for partial_response in chat_response(user_message, history[:-2], system_prompt, temperature, max_tokens):
+        for partial_response in chat_response(user_message, history[:-2], system_prompt, temperature, max_tokens, provider):
             # 更新助手消息内容
             history[-1] = {"role": "assistant", "content": partial_response}
             # 实时返回更新后的历史记录
@@ -212,7 +217,7 @@ with gr.Blocks(title="DeepSeek Chat Demo") as demo:
         outputs=[msg_input, chatbot]    # 输出组件
     ).then(                             # 链式调用：用户消息处理完成后
         bot_message,                    # 处理函数
-        inputs=[chatbot, system_prompt, temperature, max_tokens],  # 输入组件
+        inputs=[chatbot, system_prompt, temperature, max_tokens, provider],  # 输入组件
         outputs=[chatbot]               # 输出组件
     )
     
@@ -223,7 +228,7 @@ with gr.Blocks(title="DeepSeek Chat Demo") as demo:
         outputs=[msg_input, chatbot]    # 输出组件
     ).then(                             # 链式调用：用户消息处理完成后
         bot_message,                    # 处理函数
-        inputs=[chatbot, system_prompt, temperature, max_tokens],  # 输入组件
+        inputs=[chatbot, system_prompt, temperature, max_tokens, provider],  # 输入组件
         outputs=[chatbot]               # 输出组件
     )
     

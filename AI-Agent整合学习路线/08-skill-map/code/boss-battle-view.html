@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agent 打怪通关图谱</title>
+<style>
+  :root {
+    --bg: #0a0e17;
+    --bg2: #111827;
+    --bg3: #1a1f2e;
+    --bg4: #242b3d;
+    --text: #c9d1d9;
+    --text2: #8b949e;
+    --accent1: #22d3ee;
+    --accent2: #a78bfa;
+    --accent3: #f59e0b;
+    --accent4: #ef4444;
+    --accent5: #10b981;
+    --accent6: #ec4899;
+    --gold: #fbbf24;
+    --xp-bar: linear-gradient(90deg, #22d3ee, #a78bfa, #f59e0b, #ef4444);
+    --border: #30363d;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+  body::before {
+    content: '';
+    position: fixed; top:0; left:0; right:0; bottom:0;
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(34,211,238,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 30%, rgba(167,139,250,0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 40% 70%, rgba(245,158,11,0.04) 0%, transparent 50%),
+      radial-gradient(ellipse at 70% 85%, rgba(239,68,68,0.04) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .container { max-width:1200px; margin:0 auto; padding:0 24px; position:relative; z-index:1; }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 60px 24px 40px;
+  }
+  .header h1 {
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, var(--accent1), var(--accent2), var(--accent3));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 12px;
+    letter-spacing: -0.02em;
+  }
+  .header .stats {
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+  .header .stat {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    color: var(--text2);
+  }
+  .header .stat strong { color: var(--accent1); font-size: 1.1rem; }
+
+  /* Section Titles */
+  .section-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 48px 0 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* World Map */
+  .world-map {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 40px;
+    align-items: start;
+  }
+  .world-stage {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 14px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    color: inherit;
+    display: block;
+  }
+  .world-stage:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .world-stage:nth-child(1) { border-top: 3px solid var(--accent5); }
+  .world-stage:nth-child(2) { border-top: 3px solid var(--accent2); }
+  .world-stage:nth-child(3) { border-top: 3px solid var(--accent1); }
+  .world-stage:nth-child(4) { border-top: 3px solid var(--accent3); }
+  .world-stage:nth-child(5) { border-top: 3px solid var(--accent6); }
+  .world-stage:nth-child(6) { border-top: 3px solid var(--accent4); }
+  .world-stage .stage-emoji { font-size: 1.6rem; display:block; margin-bottom:6px; }
+  .world-stage .stage-name { font-weight:700; font-size:0.95rem; margin-bottom:4px; }
+  .world-stage .stage-meta { font-size:0.78rem; color:var(--text2); }
+  .world-stage .stage-boss { font-size:0.75rem; color:var(--accent4); margin-top:6px; }
+  .world-arrows { display:none; }
+
+  /* World Map: supply + side info */
+  .world-info {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 40px;
+  }
+  .world-info-card {
+    flex: 1;
+    min-width: 180px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    font-size: 0.82rem;
+  }
+  .world-info-card .info-title { font-weight:700; margin-bottom:6px; color:var(--accent3); }
+
+  /* EXP Progress Bar */
+  .xp-section {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    margin-bottom: 40px;
+  }
+  .xp-bar-container {
+    height: 8px;
+    background: var(--bg4);
+    border-radius: 4px;
+    margin: 16px 0;
+    overflow: hidden;
+  }
+  .xp-bar-fill {
+    height: 100%;
+    background: var(--xp-bar);
+    border-radius: 4px;
+    transition: width 0.6s ease;
+  }
+  .xp-ranks {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 8px;
+    margin-top: 16px;
+  }
+  .xp-rank {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    padding: 8px 12px;
+    background: var(--bg3);
+    border-radius: var(--radius-sm);
+    border-left: 3px solid var(--border);
+    transition: all 0.3s;
+  }
+  .xp-rank.active { border-left-color: var(--accent1); background: rgba(34,211,238,0.08); }
+  .xp-rank .rank-emoji { font-size: 1.2rem; }
+  .xp-rank .rank-exp { color: var(--text2); margin-left: auto; }
+
+  /* Accordion */
+  .accordion { margin-bottom: 40px; }
+  .accordion-item {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 12px;
+    overflow: hidden;
+  }
+  .accordion-header {
+    padding: 18px 20px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    user-select: none;
+    transition: background 0.2s;
+  }
+  .accordion-header:hover { background: var(--bg3); }
+  .accordion-item:nth-child(1) .accordion-header { border-left: 4px solid var(--accent5); }
+  .accordion-item:nth-child(2) .accordion-header { border-left: 4px solid var(--accent2); }
+  .accordion-item:nth-child(3) .accordion-header { border-left: 4px solid var(--accent1); }
+  .accordion-item:nth-child(4) .accordion-header { border-left: 4px solid var(--accent3); }
+  .accordion-item:nth-child(5) .accordion-header { border-left: 4px solid var(--accent6); }
+  .accordion-item:nth-child(6) .accordion-header { border-left: 4px solid var(--accent4); }
+  .accordion-arrow {
+    transition: transform 0.3s;
+    font-size: 0.7rem;
+    color: var(--text2);
+  }
+  .accordion-item.open .accordion-arrow { transform: rotate(180deg); }
+  .accordion-title { flex:1; }
+  .accordion-title .area-name { font-weight:700; font-size:1.05rem; }
+  .accordion-title .area-meta { font-size:0.78rem; color:var(--text2); margin-top:2px; }
+  .accordion-boss { font-size:0.8rem; color:var(--accent4); }
+  .accordion-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+  }
+  .accordion-item.open .accordion-body { max-height: 4000px; }
+  .accordion-content { padding: 0 20px 20px; }
+
+  /* Level Cards */
+  .level-cards { display:grid; gap:12px; }
+  .level-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 18px;
+  }
+  .level-card .level-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .level-card .level-num {
+    background: var(--bg4);
+    border-radius: 50%;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+  .level-card .level-name { font-weight:700; }
+  .level-card .level-detail { display:grid; grid-template-columns:auto 1fr; gap:6px 12px; font-size:0.85rem; }
+  .level-card .level-detail .label { color:var(--text2); white-space:nowrap; }
+  .level-card .level-detail .value { }
+  .tag {
+    display:inline-block;
+    background:var(--bg4);
+    border-radius:4px;
+    padding:1px 7px;
+    font-size:0.78rem;
+    margin:1px;
+  }
+  .tag-boss { border:1px solid var(--accent4); color:var(--accent4); }
+
+  /* Achievements */
+  .achievements { margin-bottom:40px; }
+  .ach-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(280px, 1fr)); gap:10px; }
+  .ach-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    transition: all 0.2s;
+  }
+  .ach-card:hover { transform: translateY(-1px); box-shadow:0 4px 12px rgba(0,0,0,0.3); }
+  .ach-icon { font-size:1.4rem; flex-shrink:0; width:32px; text-align:center; }
+  .ach-info { flex:1; }
+  .ach-info .ach-name { font-weight:700; font-size:0.9rem; }
+  .ach-info .ach-cond { font-size:0.78rem; color:var(--text2); margin-top:2px; }
+
+  /* Side quests & Hidden */
+  .extra-section { margin-bottom:40px; }
+  .extra-table {
+    width:100%;
+    border-collapse: collapse;
+    font-size:0.85rem;
+    background:var(--bg2);
+    border:1px solid var(--border);
+    border-radius:var(--radius-sm);
+    overflow:hidden;
+  }
+  .extra-table th, .extra-table td {
+    padding:10px 14px;
+    text-align:left;
+    border-bottom:1px solid var(--border);
+  }
+  .extra-table th { background:var(--bg3); color:var(--text2); font-weight:600; font-size:0.78rem; text-transform:uppercase; }
+  .extra-table tr:last-child td { border-bottom:none; }
+
+  /* Footer */
+  .footer {
+    text-align:center;
+    padding:40px 24px;
+    font-size:1.1rem;
+  }
+  .footer strong {
+    background:linear-gradient(135deg, var(--accent1), var(--accent2));
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+    background-clip:text;
+  }
+
+  /* Responsive */
+  @media (max-width:768px) {
+    .world-map { grid-template-columns: repeat(2,1fr); }
+    .container { padding:0 16px; }
+    .header { padding:40px 16px 30px; }
+    .header .stats { gap:12px; }
+    .header .stat { padding:8px 14px; font-size:0.8rem; }
+    .xp-ranks { grid-template-columns: repeat(2,1fr); }
+    .ach-grid { grid-template-columns: 1fr; }
+  }
+  @media (max-width:480px) {
+    .world-map { grid-template-columns: 1fr 1fr; }
+    .world-stage { padding:14px 10px; }
+    .world-stage .stage-emoji { font-size:1.3rem; }
+    .world-stage .stage-name { font-size:0.85rem; }
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🎮 AI Agent 打怪通关图谱</h1>
+      <p style="color:var(--text2);max-width:600px;margin:0 auto;">
+        资深前端工程师 · 转职全栈 AI Agent 工程师 · 22 周冒险之旅
+      </p>
+      <div class="stats">
+        <div class="stat">⏱️ 预计时间 <strong>22周</strong></div>
+        <div class="stat">⭐ 总经验 <strong>110 EXP</strong></div>
+        <div class="stat">🏰 关卡数 <strong>22</strong></div>
+        <div class="stat">🐉 BOSS <strong>22+</strong></div>
+      </div>
+    </div>
+
+    <!-- EXP Progress -->
+    <div class="xp-section">
+      <div style="font-weight:700;font-size:1.1rem;">📊 经验值与等级进度</div>
+      <div class="xp-bar-container">
+        <div class="xp-bar-fill" style="width:0%"></div>
+      </div>
+      <div class="xp-ranks">
+        <div class="xp-rank active" data-range="0-20" onclick="highlightRank(this)">
+          <span class="rank-emoji">🔰</span> 蛇语学徒 <span class="rank-exp">0-20 EXP</span>
+        </div>
+        <div class="xp-rank" data-range="21-35" onclick="highlightRank(this)">
+          <span class="rank-emoji">⚔️</span> LLM 见习骑士 <span class="rank-exp">21-35 EXP</span>
+        </div>
+        <div class="xp-rank" data-range="36-55" onclick="highlightRank(this)">
+          <span class="rank-emoji">🧙</span> Prompt 魔法师 <span class="rank-exp">36-55 EXP</span>
+        </div>
+        <div class="xp-rank" data-range="56-80" onclick="highlightRank(this)">
+          <span class="rank-emoji">🤖</span> Agent 工程师 <span class="rank-exp">56-80 EXP</span>
+        </div>
+        <div class="xp-rank" data-range="81-95" onclick="highlightRank(this)">
+          <span class="rank-emoji">📡</span> MCP 架构师 <span class="rank-exp">81-95 EXP</span>
+        </div>
+        <div class="xp-rank" data-range="96-110" onclick="highlightRank(this)">
+          <span class="rank-emoji">👑</span> 全栈 AI Agent 大师 <span class="rank-exp">96-110 EXP</span>
+        </div>
+      </div>
+      <div style="margin-top:12px;font-size:0.8rem;color:var(--text2);">
+        💡 点击等级称号模拟进度条
+      </div>
+    </div>
+
+    <!-- World Map -->
+    <div class="section-title">🗺️ 世界地图路线</div>
+    <div class="world-map" id="worldMap"></div>
+
+    <!-- Supply & Side Info -->
+    <div class="world-info">
+      <div class="world-info-card">
+        <div class="info-title">🏕️ 补给站</div>
+        <div>第4周 → 翠蛇营地<br>第7周 → 思维驿站<br>第11周 → 知识绿洲<br>第16周 → 机械工坊<br>第19周 → 协议灯塔<br>第22周 → 🎉 云端之巅</div>
+      </div>
+      <div class="world-info-card">
+        <div class="info-title">🔀 支线任务</div>
+        <div>🧩 Ollama 本地部署<br>🧩 HuggingFace 模型探索<br>🧩 Vue/React Agent 前端<br>🧩 Vector DB 性能对比<br>🧩 DeepSeek API 实验</div>
+      </div>
+      <div class="world-info-card">
+        <div class="info-title">🔮 隐藏关卡</div>
+        <div>🔮 模型微调秘境<br>🔮 Web Agent 前哨<br>🔮 Agent Swarm 虫巢<br>🔮 RAG 评估试炼<br>🔮 本地推理要塞</div>
+      </div>
+    </div>
+
+    <!-- Six Areas Accordion -->
+    <div class="section-title">🏰 六大区域详解</div>
+    <div class="accordion" id="accordion"></div>
+
+    <!-- Achievements -->
+    <div class="section-title">🏅 成就系统</div>
+    <div class="achievements" id="achievements"></div>
+
+    <!-- Side Quests -->
+    <div class="section-title">🔀 支线任务</div>
+    <div class="extra-section">
+      <table class="extra-table" id="sideQuestsTable"></table>
+    </div>
+
+    <!-- Hidden Levels -->
+    <div class="section-title">🔮 隐藏关卡</div>
+    <div class="extra-section">
+      <table class="extra-table" id="hiddenLevelsTable"></table>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <p>🎉 准备开始你的冒险了吗？从 Level 1-1 出发，一路打到 🛡️ 最终守护者！</p>
+      <p style="color:var(--text2);margin-top:8px;font-size:0.9rem;">
+        每个 BOSS 都是你变强的机会 · 22 周后成为 <strong>全栈 AI Agent 工程师</strong>
+      </p>
+    </div>
+  </div>
+
+<script>
+// ==================== DATA ====================
+
+const stages = [
+  {
+    id: 'stage1', emoji:'🌿', name:'翠蛇平原', tag:'Python 后端基础',
+    week:'4周', exp:'20 EXP', levels:'Lv.1-1~4',
+    boss:'🐉 异步魔龙 asyncio', color:'#10b981'
+  },
+  {
+    id: 'stage2', emoji:'🧠', name:'思维神殿', tag:'LLM 基础原理',
+    week:'3周', exp:'15 EXP', levels:'Lv.2-1~3',
+    boss:'👁️ Token 守护者 TokenGuardian', color:'#a78bfa'
+  },
+  {
+    id: 'stage3', emoji:'📚', name:'知识深渊', tag:'Prompt & RAG',
+    week:'4周', exp:'20 EXP', levels:'Lv.3-1~4',
+    boss:'👻 幻觉幻影领主 HallucinationLord', color:'#22d3ee'
+  },
+  {
+    id: 'stage4', emoji:'🤖', name:'机械王都', tag:'AI Agent 框架',
+    week:'5周', exp:'25 EXP', levels:'Lv.4-1~5',
+    boss:'🐲 状态机巨龙 StateMachineDragon', color:'#f59e0b'
+  },
+  {
+    id: 'stage5', emoji:'📡', name:'协议之塔', tag:'MCP 协议',
+    week:'3周', exp:'15 EXP', levels:'Lv.5-1~3',
+    boss:'🏗️ 协议巨人 MCPColossus', color:'#ec4899'
+  },
+  {
+    id: 'stage6', emoji:'🏰', name:'云端城堡', tag:'工程化 & 部署',
+    week:'3周', exp:'15 EXP', levels:'Lv.6-1~3',
+    boss:'🛡️ 运维守卫 DevOpsGuardian', color:'#ef4444'
+  }
+];
+
+const areas = [
+  {
+    id:'area1', emoji:'🌿', name:'阶段一：翠蛇平原', subtitle:'Python 后端基础',
+    theme:'从 TypeScript 大陆穿越到 Python 平原，掌握蛇语魔法',
+    boss:'🐉 异步魔龙 asyncio — 拥有强大的并发吐息，需用协程护盾抵挡',
+    week:'4周', exp:'20', supplyWeek:'第4周',
+    levels:[
+      {num:'1-1',emoji:'🐍',name:'蛇语觉醒',sub:'Python 基础语法',
+        boss:'🐍 缩进巨蟒 IndentationError — 用严格的缩进纪律约束冒险者',
+        mobs:['变量哥布林','函数史莱姆','列表骷髅兵','字典石像鬼','类幽灵','异常蝙蝠'],
+        loot:'⚔️ Python 语法之剑 · 🛡️ 类型注解护盾 · 💍 推导式戒指',
+        expStar:'⭐⭐',expNote:'基础但内容密度大',hp:'~18h',
+        pass:'✅ 翻译一段 TS 代码为 Python ✅ 实现 @retry 装饰器 ✅ CLI 工具可运行'},
+      {num:'1-2',emoji:'📦',name:'包管理器大师',sub:'工程化入门',
+        boss:'🌀 依赖地狱犬 DependencyHell — 三头犬分别代表 pip/poetry/uv',
+        mobs:['虚拟环境史莱姆','pyproject.toml 石像','pip 食人花','async 元素精灵','aiofiles 鹰身女妖'],
+        loot:'⚔️ uv 管理之剑 · 🛡️ 虚拟环境护盾 · 👢 asyncio 疾风靴',
+        expStar:'⭐⭐',expNote:'工程化概念对前端很友好',hp:'~18h',
+        pass:'✅ uv 管理项目 ✅ asyncio.gather 并发 ✅ httpx 异步客户端'},
+      {num:'1-3',emoji:'🚀',name:'疾风 API',sub:'FastAPI 精通',
+        boss:'⚡ 路由九头蛇 RouteHydra — 每砍掉一个路由就长出两个新端点',
+        mobs:['@decorator 蜘蛛','Pydantic 魔像','Depends 链魔','Swagger 飞龙（友方）','HTTPException 毒蝎'],
+        loot:'⚔️ FastAPI 疾风剑 · 🛡️ Pydantic 验证盾 · 📜 Swagger 自动文档卷轴',
+        expStar:'⭐⭐⭐',expNote:'框架学习需要适应',hp:'~20h',
+        pass:'✅ CRUD 端点 ✅ JWT 认证 ✅ pytest 测试 ✅ Swagger 可访问'},
+      {num:'1-4',emoji:'🗄️',name:'数据掌控者',sub:'SQLAlchemy + 项目交付',
+        boss:'🐉 异步魔龙 asyncio（区域BOSS）— 多表联查攻击 + 迁移诅咒',
+        mobs:['ORM 石像鬼','Session 幽灵','Alembic 时光法师（友方）','外键陷阱食人花','pytest-asyncio 守卫'],
+        loot:'🗡️ SQLAlchemy 龙牙匕首 · 🛡️ Alembic 时光盾 · 🏆 dev-note-api 神器',
+        expStar:'⭐⭐⭐',expNote:'ORM 关系映射有学习曲线',hp:'~20h',
+        pass:'✅ 完整 CRUD + JWT ✅ Alembic 迁移 ✅ 12+ 测试 ✅ README'}
+    ]
+  },
+  {
+    id:'area2', emoji:'🧠', name:'阶段二：思维神殿', subtitle:'LLM 基础原理',
+    theme:'踏入 LLM 神殿，解开大模型的思维密码',
+    boss:'👁️ Token 守护者 TokenGuardian — 守护 LLM 核心秘密的神殿守卫',
+    week:'3周', exp:'15', supplyWeek:null,
+    levels:[
+      {num:'2-1',emoji:'🧠',name:'思维觉醒',sub:'理解大模型',
+        boss:'🔮 注意力之眼 AttentionEye — 让你理解模型如何「看」世界',
+        mobs:['Token 碎片魔','Embedding 向量幽灵','Transformer 巨石像','Context Window 界限守卫','Temperature 温控龙'],
+        loot:'🧠 Token 理解之冠 · 📐 Embedding 量尺 · 🗺️ 模型选型地图',
+        expStar:'⭐⭐',expNote:'概念理解为主，不涉及数学推导',hp:'~18h',
+        pass:'✅ 解释 Token/Embedding/Attention ✅ 说出 4+ 模型特点 ✅ 画 LLM 流程图'},
+      {num:'2-2',emoji:'🔌',name:'API 召唤师',sub:'调用大模型',
+        boss:'🌡️ 温控元素使 TemperatureElemental — 用温度参数控制创造力的元素生物',
+        mobs:['API Key 钥匙妖精','Stream 流水蛇','Rate Limit 栅栏魔','Message 三角幽灵 (system/user/assistant)','Error Code 陷阱蜘蛛'],
+        loot:'🪄 OpenAI SDK 魔杖 · 📡 流式输出水晶球 · 🎛️ 多模型切换器',
+        expStar:'⭐⭐',expNote:'API 调用对前端来说非常熟悉',hp:'~18h',
+        pass:'✅ 调用 API ✅ 流式输出 ✅ temperature 实验 ✅ 错误处理'},
+      {num:'2-3',emoji:'🔍',name:'代码审查官',sub:'AI CR 工具',
+        boss:'👁️ Token 守护者 TokenGuardian（区域BOSS）— 最终考验：用 AI 守护代码质量',
+        mobs:['System Prompt 工匠','Git Diff 变形怪','Rich 彩虹鸟（友方）','Markdown 排版术士','CLI 框架石像'],
+        loot:'🏆 ai-code-review 神器 · 📝 代码审查之眼 · 🎨 Rich 彩虹终端',
+        expStar:'⭐⭐⭐',expNote:'首个完整的 LLM 应用项目',hp:'~20h',
+        pass:'✅ check + diff 模式 ✅ 等级分类 ✅ 修复建议 ✅ README'}
+    ]
+  },
+  {
+    id:'area3', emoji:'📚', name:'阶段三：知识深渊', subtitle:'Prompt Engineering & RAG',
+    theme:'潜入知识深渊，掌握 Prompt 魔法和 RAG 检索技艺',
+    boss:'👻 幻觉幻影领主 HallucinationLord — 制造虚假信息的幻影领主',
+    week:'4周', exp:'20', supplyWeek:'第11周',
+    levels:[
+      {num:'3-1',emoji:'💬',name:'低语智者',sub:'Prompt 工程精通',
+        boss:'🎭 人格面具 PersonaMask — 在不同 Prompt 策略间变换身份的诡术师',
+        mobs:['Zero-shot 空魔术士','Few-shot 示例精灵','CoT 思考链魔','ToT 树形妖','ReAct 循环守卫','Self-Consistency 投票石像'],
+        loot:'📜 Prompt 模板集 · 🎭 人格面具 · 🔮 Jinja2 模板引擎',
+        expStar:'⭐⭐⭐',expNote:'7 种策略需要实验对比',hp:'~18h',
+        pass:'✅ 区分 5+ Prompt 策略 ✅ Few-shot 示例 ✅ 结构化输出 ✅ 解释 ReAct'},
+      {num:'3-2',emoji:'📚',name:'知识编织者',sub:'RAG 入门',
+        boss:'🧩 碎片魔像 ChunkGolem — 由无数文档碎片组成的巨像，需要完美切分才能击败',
+        mobs:['Chunking 剪刀手','Embedding 织网者','Chroma 萤火虫（友方）','MMR 检索妖精','Metadata 过滤器'],
+        loot:'🗡️ Chunking 分割之刃 · 🛡️ Chroma 向量盾 · 🧭 相似度罗盘',
+        expStar:'⭐⭐⭐',expNote:'RAG 流水线有多个环节',hp:'~18h',
+        pass:'✅ 画 RAG 流程图 ✅ 选 Chunking 策略 ✅ Chroma 检索 ✅ 完整链路'},
+      {num:'3-3',emoji:'🔗',name:'框架驾驭者',sub:'LangChain & LlamaIndex',
+        boss:'⚙️ 抽象魔偶 AbstractionGolem — LangChain 层层抽象组成的机械魔偶',
+        mobs:['LCEL 管道妖精','ChainLink 锁链魔','Retriever 猎犬','LlamaIndex 巨鹰（友方）','Ollama 雪人（可选）'],
+        loot:'🔗 LangChain 链刃 · 🦙 LlamaIndex 巨鹰坐骑 · 🧩 框架选型罗盘',
+        expStar:'⭐⭐⭐',expNote:'两个框架的 API 都需要熟悉',hp:'~18h',
+        pass:'✅ LCEL 链式调用 ✅ LlamaIndex 快速 RAG ✅ 框架定位差异'},
+      {num:'3-4',emoji:'🏗️',name:'文档智者',sub:'RAG 系统交付',
+        boss:'👻 幻觉幻影领主 HallucinationLord（区域BOSS）— 虚假知识的制造者，用「不知道」护盾方可对抗',
+        mobs:['文档上传食人花','流式输出水龙','来源引用追踪者','边界情况幽灵','前端界面魅魔（可选）'],
+        loot:'🏆 doc-qa 神器 · 👁️ 来源追溯之眼 · 🌊 流式回答波浪',
+        expStar:'⭐⭐⭐⭐',expNote:'完整的 RAG 系统是重要里程碑',hp:'~20h',
+        pass:'✅ 文档上传 ✅ 来源引用 ✅ 流式返回 ✅ 「不知道」处理 ✅ 响应<5s'}
+    ]
+  },
+  {
+    id:'area4', emoji:'🤖', name:'阶段四：机械王都', subtitle:'AI Agent 框架',
+    theme:'进入 Agent 的机械王都，组装你的智能体军团',
+    boss:'🐲 状态机巨龙 StateMachineDragon — 管理 Agent 复杂状态流转的远古巨龙',
+    week:'5周', exp:'25', supplyWeek:'第16周',
+    levels:[
+      {num:'4-1',emoji:'🤖',name:'智能体觉醒',sub:'Agent 基础',
+        boss:'🔄 ReAct 循环巨兽 ReActCyclops — 不停执行 Thought→Action→Observation 的独眼巨人',
+        mobs:['Agent 自主魔偶','Tool 工具妖精','Planning 规划法师','Memory 记忆幽灵','Function Calling 石像'],
+        loot:'🤖 Agent 核心芯片 · 🔧 Tool 工具腰带 · 🔄 ReAct 循环引擎',
+        expStar:'⭐⭐⭐',expNote:'Agent 是一个思维范式转变',hp:'~18h',
+        pass:'✅ Agent 四大组件 ✅ ReAct 流程图 ✅ Tool 定义 ✅ 决策链观察'},
+      {num:'4-2',emoji:'🔀',name:'图灵绘师',sub:'LangGraph 工作流',
+        boss:'🌳 图灵织网者 GraphWeaver — 用节点和边编织命运的蛛网领主',
+        mobs:['StateGraph 魔方','Node 守卫','ConditionalEdge 岔路妖','Checkpoint 存档精灵（友方）','interrupt 时停术士'],
+        loot:'🗺️ StateGraph 地图 · 🔀 条件路由罗盘 · 💾 Checkpoint 存档水晶',
+        expStar:'⭐⭐⭐⭐',expNote:'LangGraph 是核心技能',hp:'~18h',
+        pass:'✅ StateGraph 定义 ✅ 条件路由 ✅ Checkpoint 恢复 ✅ HITL 审批'},
+      {num:'4-3',emoji:'🛠️',name:'装备大师',sub:'Tool 与 Memory',
+        boss:'💭 记忆吞噬者 MemoryDevourer — 吞噬对话历史、超出 Context Window 的记忆巨兽',
+        mobs:['Tool Registry 铁匠','BufferMemory 缓冲魔','SummaryMemory 压缩法师','Token-aware 剪刀手','Reducer 锁链'],
+        loot:'🛠️ Tool 锻造锤 · 💭 双记忆护盾（短期+长期）· ✂️ 记忆裁剪剪刀',
+        expStar:'⭐⭐⭐',expNote:'Tool 和 Memory 是 Agent 的双手和大脑',hp:'~18h',
+        pass:'✅ 参数验证 Tool ✅ 短期+长期记忆 ✅ Token 预算管理'},
+      {num:'4-4',emoji:'🎭',name:'多面手联盟',sub:'Multi-Agent 编排',
+        boss:'👥 五头协调兽 PentCoordinator — 五个头分别使用 Router/Sequential/Debate/Hierarchical/Parallel 模式',
+        mobs:['CrewAI 船员妖精','AutoGen 对话傀儡','Debate 辩论骑士','Parallel 分身术士','Merge 融合法师'],
+        loot:'👥 Multi-Agent 指挥旗 · 🎭 CrewAI 角色面具 · ⚔️ AutoGen 代码之刃',
+        expStar:'⭐⭐⭐⭐',expNote:'多 Agent 是进阶能力',hp:'~18h',
+        pass:'✅ 5 种模式架构图 ✅ LangGraph 2 种模式 ✅ 框架选型'},
+      {num:'4-5',emoji:'🏢',name:'客服帝国',sub:'项目交付',
+        boss:'🐲 状态机巨龙 StateMachineDragon（区域BOSS）— 管理 4 个 Agent 复杂状态流转的远古巨龙',
+        mobs:['Router 守卫','Knowledge RAG 龙','Ticket 工单兽','Summarize 压缩鸟','Checkpoint 存档祭司'],
+        loot:'🏆 agent-support 神器 · 🏰 Multi-Agent 城堡 · 🌐 WebSocket 传送门',
+        expStar:'⭐⭐⭐⭐⭐',expNote:'整个路线中最核心的项目',hp:'~20h',
+        pass:'✅ Router 3 意图 ✅ Knowledge 准确回答 ✅ Ticket 创建工单 ✅ Summarize 摘要 ✅ Checkpoint 恢复'}
+    ]
+  },
+  {
+    id:'area5', emoji:'📡', name:'阶段五：协议之塔', subtitle:'MCP 协议与工具生态',
+    theme:'攀登协议之塔，解锁 AI Agent 的「USB-C 万能接口」',
+    boss:'🏗️ 协议巨人 MCPColossus — 守护标准化工具接口的巨像',
+    week:'3周', exp:'15', supplyWeek:'第19周',
+    levels:[
+      {num:'5-1',emoji:'📡',name:'协议破译者',sub:'MCP 架构',
+        boss:'🔌 三头接口兽 TripleInterfaceBeast — Resources/Tools/Prompts 三个头各司其职',
+        mobs:['JSON-RPC 信使','stdio 隧道虫','SSE 传令鸟','MCP Inspector 侦察鹰（友方）','filesystem 树精'],
+        loot:'📡 MCP 协议天线 · 🔌 接口转换器 · 🔍 MCP Inspector 侦察镜',
+        expStar:'⭐⭐',expNote:'协议概念清晰易懂',hp:'~18h',
+        pass:'✅ MCP 架构图 ✅ 三大原语 ✅ Inspector 调试 ✅ 2+ 现有 Server'},
+      {num:'5-2',emoji:'🏭',name:'服务器铸造师',sub:'MCP Server 开发',
+        boss:'⚒️ 锻造巨锤 ForgeHammer — 铸造 MCP Server 三原语的神锤，一击不中需重头再来',
+        mobs:['@server 装饰铁砧','list_resources 矿脉','call_tool 火炉','get_prompt 模具','inputSchema 蓝图'],
+        loot:'⚒️ MCP Server 锻造锤 · 📋 三原语模板 · 🛡️ 错误处理盾',
+        expStar:'⭐⭐⭐',expNote:'Server 开发需要理解完整生命周期',hp:'~18h',
+        pass:'✅ 三原语齐备 ✅ URI 解析 ✅ 错误处理 ✅ Inspector 调试'},
+      {num:'5-3',emoji:'🔌',name:'万物互联',sub:'项目交付',
+        boss:'🏗️ 协议巨人 MCPColossus（区域BOSS）— 需要将 MCP Server 集成到 Agent 才能击败',
+        mobs:['GitHub API 石像鬼','ClientSession 侍从','Tool 转换器','环境变量守护者','README 书写僧'],
+        loot:'🏆 github-mcp-server 神器 · 🔌 MCP-Agent 集成插头 · 🌐 GitHub 之门',
+        expStar:'⭐⭐⭐⭐',expNote:'MCP + Agent 是工业级能力',hp:'~20h',
+        pass:'✅ 3 Resources ✅ 3 Tools ✅ 2 Prompts ✅ Agent 集成 ✅ README'}
+    ]
+  },
+  {
+    id:'area6', emoji:'🏰', name:'阶段六：云端城堡', subtitle:'工程化与生产部署',
+    theme:'登上云端城堡，让 Agent 系统飞向生产环境',
+    boss:'🛡️ 运维守卫 DevOpsGuardian — 守卫生产环境入口的终极守卫',
+    week:'3周', exp:'15', supplyWeek:'第22周',
+    levels:[
+      {num:'6-1',emoji:'📊',name:'全视之眼',sub:'可观测性系统',
+        boss:'💸 成本恶龙 CostDragon — 肆意吞噬 Token 预算的金币恶龙',
+        mobs:['LangSmith 追踪鹰（友方）','LangFuse 开源精灵','tiktoken 计数士','ModelRouter 分路石','缓存水晶'],
+        loot:'📊 LangSmith 全视之眼 · 💰 CostController 钱包锁 · 🗺️ ModelRouter 地图',
+        expStar:'⭐⭐⭐',expNote:'成本意识是专业素养',hp:'~18h',
+        pass:'✅ 调用链追踪 ✅ Token 成本计算 ✅ 预算控制 ✅ 缓存机制'},
+      {num:'6-2',emoji:'🐳',name:'容器大师',sub:'Docker 编排',
+        boss:'🐋 鲸鱼巨兽 DockerWhale — 需要四服务编排才能驾驭的容器巨兽',
+        mobs:['Dockerfile 构建魔','docker-compose 编曲家','多阶段构建法师','uv 加速精灵','GitHub Actions 机器人'],
+        loot:'🐳 Docker 容器号角 · 📦 docker-compose 编曲谱 · 🤖 CI/CD 机器人',
+        expStar:'⭐⭐⭐',expNote:'前端经验可大量复用',hp:'~18h',
+        pass:'✅ 生产级 Dockerfile ✅ 4 服务编排 ✅ 3 种优化 ✅ CI pipeline'},
+      {num:'6-3',emoji:'🛡️',name:'最终守护者',sub:'生产级交付',
+        boss:'🛡️ 运维守卫 DevOpsGuardian（最终BOSS）— 守护生产环境的终极守卫：安全+限流+健康检查+优雅关闭',
+        mobs:['SecretStr 暗影守卫','Prompt 注入刺客','slowapi 限流门卫','/health 生命祭司','Graceful Shutdown 安眠术士'],
+        loot:'🛡️ 安全加固之盾 · 🌊 速率限制之河 · 🏆 生产级 Agent 系统',
+        expStar:'⭐⭐⭐⭐',expNote:'交付生产的临门一脚',hp:'~20h',
+        pass:'✅ docker compose 一键启动 ✅ Trace 可追踪 ✅ CI/CD 绿灯 ✅ 安全加固 ✅ /health 正常'}
+    ]
+  }
+];
+
+const achievements = [
+  {cat:'入门成就', items:[
+    {icon:'🏅',name:'Hello World 毁灭者',cond:'完成第一个 FastAPI 服务并 Swagger 可访问'},
+    {icon:'🏅',name:'缩进服从者',cond:'连续写 100 行 Python 代码无 IndentationError'},
+    {icon:'🏅',name:'包管理器驯兽师',cond:'用 uv 成功创建并管理 3 个以上项目'}
+  ]},
+  {cat:'进阶成就', items:[
+    {icon:'🎖️',name:'Token 精算师',cond:'手动计算 100 次 API 调用的 Token 用量，误差 < 5%'},
+    {icon:'🎖️',name:'Prompt 炼金术士',cond:'收集 20+ 个可复用 Prompt 模板并分类整理'},
+    {icon:'🎖️',name:'向量航海家',cond:'用 3 种不同 Chunking 策略完成 RAG 对比实验'}
+  ]},
+  {cat:'高级成就', items:[
+    {icon:'🥇',name:'Agent 驯龙高手',cond:'构建包含 4+ Agent 的多 Agent 协作系统'},
+    {icon:'🥇',name:'MCP 铸剑师',cond:'发布一个 MCP Server 到社区并被其他人使用'},
+    {icon:'🥇',name:'全栈通关者',cond:'完成全部 6 个阶段的实战项目并通过验收'}
+  ]},
+  {cat:'传奇成就', items:[
+    {icon:'👑',name:'AI Agent 转职成功',cond:'完成 22 周全部学习，6 个 GitHub 项目绿点满格'},
+    {icon:'👑',name:'成本守护者',cond:'用成本优化策略将 Agent 系统月度费用降低 50%+'},
+    {icon:'👑',name:'开源贡献者',cond:'向 LangChain/LlamaIndex/MCP 等开源项目提交 PR 并被合并'},
+    {icon:'👑',name:'布道者',cond:'发表 3+ 篇 AI Agent 技术文章，总阅读量 10000+'}
+  ]}
+];
+
+const sideQuests = [
+  {id:'🧩 S1',name:'Ollama 本地部署',trigger:'第 10 周',reward:'本地模型运行能力、离线 Agent',rec:'⭐⭐⭐'},
+  {id:'🧩 S2',name:'HuggingFace 模型探索',trigger:'第 10 周',reward:'开源模型生态认知',rec:'⭐⭐'},
+  {id:'🧩 S3',name:'用 Vue/React 写 Agent 前端',trigger:'第 11/16 周',reward:'前端+后端全栈能力展示',rec:'⭐⭐⭐⭐⭐'},
+  {id:'🧩 S4',name:'Vector DB 性能对比',trigger:'第 9-10 周',reward:'Chroma vs Qdrant vs Milvus 深度理解',rec:'⭐⭐⭐'},
+  {id:'🧩 S5',name:'DeepSeek API 全系列实验',trigger:'第 6 周',reward:'性价比模型选型经验',rec:'⭐⭐⭐⭐'}
+];
+
+const hiddenLevels = [
+  {id:'🔮 H1',name:'模型微调秘境',cond:'完成阶段四',content:'LoRA/QLoRA 微调、数据集构建',exp:'⭐⭐⭐⭐'},
+  {id:'🔮 H2',name:'Web Agent 前哨',cond:'完成阶段六',content:'Playwright/浏览器自动化 Agent',exp:'⭐⭐⭐⭐'},
+  {id:'🔮 H3',name:'Agent Swarm 虫巢',cond:'完成阶段四',content:'大规模 Multi-Agent 协作系统',exp:'⭐⭐⭐⭐⭐'},
+  {id:'🔮 H4',name:'RAG 评估试炼',cond:'完成阶段三',content:'RAGAS 评估框架、检索质量量化',exp:'⭐⭐⭐'},
+  {id:'🔮 H5',name:'本地推理要塞',cond:'完成阶段四',content:'vLLM/TGI 部署、GPU 推理优化',exp:'⭐⭐⭐⭐'}
+];
+
+// ==================== RENDER ====================
+
+// World Map
+const worldMap = document.getElementById('worldMap');
+stages.forEach((s,i) => {
+  worldMap.innerHTML += `
+    <a href="#${s.id}" class="world-stage" style="animation:fadeUp 0.5s ${i*0.08}s both;">
+      <span class="stage-emoji">${s.emoji}</span>
+      <div class="stage-name">${s.name}</div>
+      <div class="stage-meta">${s.tag} · ${s.week} · ${s.exp}</div>
+      <div class="stage-meta">${s.levels}</div>
+      <div class="stage-boss">BOSS: ${s.boss}</div>
+    </a>`;
+});
+
+// Accordion
+const accordion = document.getElementById('accordion');
+areas.forEach((area,aIdx) => {
+  let levelsHtml = '';
+  area.levels.forEach(l => {
+    const mobTags = l.mobs.map(m => `<span class="tag">${m}</span>`).join(' ');
+    levelsHtml += `
+      <div class="level-card">
+        <div class="level-header">
+          <div class="level-num">${l.num}</div>
+          <div>
+            <div class="level-name">${l.emoji} ${l.name} · ${l.sub}</div>
+          </div>
+        </div>
+        <div class="level-detail">
+          <div class="label">BOSS</div><div class="value"><span class="tag tag-boss">${l.boss}</span></div>
+          <div class="label">小怪清单</div><div class="value">${mobTags}</div>
+          <div class="label">掉落装备</div><div class="value">${l.loot}</div>
+          <div class="label">EXP</div><div class="value">${l.expStar} (${l.expStar.length/2}/5) — ${l.expNote}</div>
+          <div class="label">HP 消耗</div><div class="value">${l.hp}</div>
+          <div class="label">通关条件</div><div class="value">${l.pass}</div>
+        </div>
+      </div>`;
+  });
+
+  const supplyNote = area.supplyWeek ? ` · 🏕️ 补给站：${area.supplyWeek}` : '';
+
+  accordion.innerHTML += `
+    <div class="accordion-item" id="${area.id}">
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <span class="accordion-arrow">▼</span>
+        <div class="accordion-title">
+          <div class="area-name">${area.emoji} ${area.name} — ${area.subtitle}</div>
+          <div class="area-meta">${area.week} · ${area.exp} EXP${supplyNote}</div>
+        </div>
+        <div class="accordion-boss">BOSS: ${area.boss}</div>
+      </div>
+      <div class="accordion-body">
+        <div class="accordion-content">
+          <p style="color:var(--text2);margin-bottom:16px;">> ${area.theme}</p>
+          <div class="level-cards">${levelsHtml}</div>
+        </div>
+      </div>
+    </div>`;
+});
+
+// Achievements
+const achContainer = document.getElementById('achievements');
+achievements.forEach(g => {
+  achContainer.innerHTML += `<div style="color:var(--accent3);font-weight:700;margin:16px 0 8px;">${g.cat}</div>`;
+  achContainer.innerHTML += `<div class="ach-grid">${g.items.map(a => `
+    <div class="ach-card">
+      <div class="ach-icon">${a.icon}</div>
+      <div class="ach-info">
+        <div class="ach-name">${a.name}</div>
+        <div class="ach-cond">${a.cond}</div>
+      </div>
+    </div>`).join('')}</div>`;
+});
+
+// Side Quests Table
+const sqTable = document.getElementById('sideQuestsTable');
+sqTable.innerHTML = `<thead><tr><th>编号</th><th>任务名</th><th>触发时机</th><th>奖励</th><th>推荐度</th></tr></thead><tbody>${sideQuests.map(s => `<tr><td>${s.id}</td><td><strong>${s.name}</strong></td><td>${s.trigger}</td><td>${s.reward}</td><td>${s.rec}</td></tr>`).join('')}</tbody>`;
+
+// Hidden Levels Table
+const hlTable = document.getElementById('hiddenLevelsTable');
+hlTable.innerHTML = `<thead><tr><th>编号</th><th>关卡名</th><th>解锁条件</th><th>内容</th><th>EXP</th></tr></thead><tbody>${hiddenLevels.map(h => `<tr><td>${h.id}</td><td><strong>${h.name}</strong></td><td>${h.cond}</td><td>${h.content}</td><td>${h.exp}</td></tr>`).join('')}</tbody>`;
+
+// ==================== INTERACTIONS ====================
+
+function toggleAccordion(header) {
+  const item = header.parentElement;
+  item.classList.toggle('open');
+}
+
+function highlightRank(el) {
+  document.querySelectorAll('.xp-rank').forEach(r => r.classList.remove('active'));
+  el.classList.add('active');
+  const range = el.dataset.range.split('-');
+  const max = parseInt(range[1]);
+  const pct = (max / 110) * 100;
+  const bar = document.querySelector('.xp-bar-fill');
+  bar.style.width = pct + '%';
+  // Animate
+  bar.style.transition = 'none';
+  bar.style.width = '0%';
+  requestAnimationFrame(() => {
+    bar.style.transition = 'width 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+    bar.style.width = pct + '%';
+  });
+}
+
+// Open first accordion by default
+document.addEventListener('DOMContentLoaded', () => {
+  const first = document.querySelector('.accordion-item');
+  if (first) first.classList.add('open');
+});
+
+// Add keyframe animation
+const style = document.createElement('style');
+style.textContent = `@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}`;
+document.head.appendChild(style);
+</script>
+</body>
+</html>

@@ -43,11 +43,17 @@ pip install -r requirements.txt
 创建 `.env` 文件，添加以下内容：
 
 ```
+# 默认模型提供商：deepseek 或 openai
+MODEL_PROVIDER=deepseek
+
 # DeepSeek API Key
 DEEPSEEK_API_KEY=your_deepseek_api_key
+DEEPSEEK_MODEL=deepseek-chat
+DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
 
 # OpenAI API Key (可选)
 OPENAI_API_KEY=your_openai_api_key
+OPENAI_MODEL=gpt-4o-mini
 ```
 
 ## 五、运行应用
