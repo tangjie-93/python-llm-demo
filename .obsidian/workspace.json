@@ -11,14 +11,10 @@
             "id": "03b56d70e05c3b24",
             "type": "leaf",
             "state": {
-              "type": "markdown",
-              "state": {
-                "file": "langchain-demo/retrieval_improvement_summary.md",
-                "mode": "source",
-                "source": false
-              },
+              "type": "empty",
+              "state": {},
               "icon": "lucide-file",
-              "title": "retrieval_improvement_summary"
+              "title": "新标签页"
             }
           }
         ]
@@ -186,6 +182,32 @@
   },
   "active": "050f5c7eeeb371bc",
   "lastOpenFiles": [
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/README.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/detailed-version/09-glossary.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/detailed-version/08-learning-resources.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/detailed-version/00-overview-and-study-rhythm.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/detailed-version/README.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/legacy/phase-package-notes.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/legacy/ai-agent-original-readme.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/source-map.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/detailed-version",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/legacy",
+    "AI-Agent整合学习路线/docs/superpowers/plans/2026-06-25-roadmap-archive-cleanup.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/README.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/AI-Agent原README.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/细化版README.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/细化版-09-术语表.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/细化版-08-学习资源索引.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/细化版-00-总览与学习节奏.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/阶段学习包说明.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive/99-来源映射.md",
+    "AI-Agent整合学习路线/00-roadmap/docs/archive",
+    "AI-Agent整合学习路线/docs/superpowers/plans/2026-06-24-roadmap-docs-cleanup.md",
+    "AI-Agent整合学习路线/docs/superpowers/plans",
+    "AI-Agent整合学习路线/docs/superpowers/specs/2026-06-24-roadmap-docs-cleanup-design.md",
+    "AI-Agent整合学习路线/docs/superpowers/specs",
+    "AI-Agent整合学习路线/docs/superpowers",
+    "AI-Agent整合学习路线/docs",
     "AI-Agent整合学习路线/04-agent-workflow/docs/AI-Agent常见面试题.md",
     "AI-Agent整合学习路线/00-roadmap/docs/细化版README.md",
     "AI-Agent开发学习路线细化版/README.md",
