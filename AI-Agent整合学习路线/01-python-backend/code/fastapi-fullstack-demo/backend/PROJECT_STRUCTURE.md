@@ -1,6 +1,6 @@
 # FastAPI Backend 项目结构与功能梳理
 
-本文档梳理 `backend/app` 的目录结构、分层职责和已经实现的后端功能。
+本文档梳理 `backend` 的目录结构、分层职责和已经实现的后端功能。
 
 ## 项目概览
 
@@ -12,55 +12,111 @@
 - SQLModel 数据库模型与自动建表
 - JWT 登录认证
 - Refresh Token + HttpOnly Cookie
-- 用户 CRUD
-- 物品 CRUD
-- 博客文章 CRUD
+- 用户 CRUD（含权限控制）
+- 物品 CRUD（含所有权校验）
+- 博客文章 CRUD（含作者校验）
 - 标签管理
 - 文章与标签多对多关联
+- BackgroundTasks 后台任务
 - CORS 中间件
 - 安全响应头
 - 全局异常处理
 - 统一 API 响应格式
+- pytest 测试体系（47 个测试用例）
+- Alembic 数据库迁移
+- uv 包管理配置
+- asyncio / httpx 异步并发示例
+- SQLAlchemy 2.0 原生 ORM 示例
 
 ## 目录结构
 
 ```text
-backend/app/
-  main.py
-  core/
-    config.py
-    database.py
-    response.py
-  routers/
+backend/
+  main.py                          # FastAPI 应用入口
+  pyproject.toml                   # Poetry 项目配置
+  requirements.txt                 # pip 依赖清单
+  alembic.ini                      # Alembic 迁移配置
+  .env.example                     # 环境变量示例
+
+  alembic/
+    env.py                         # 迁移环境（含 SQLModel metadata）
+    script.py.mako                 # 迁移脚本模板
+    versions/                      # 迁移版本文件
+
+  uv-setup/
+    pyproject.toml                 # uv PEP 621 标准配置
+    README.md                      # uv 迁移指南
+
+  examples/
+    async_demo.py                  # asyncio + httpx 异步并发 4 个示例
+    sqlalchemy_native_demo.py      # SQLAlchemy 2.0 原生 ORM 对比
+
+  tests/
+    conftest.py                    # pytest fixtures（engine/session/client/auth）
+    test_auth.py                   # 认证接口测试（8 个）
+    test_users.py                  # 用户 CRUD 测试（8 个）
+    test_items.py                  # 物品 CRUD 测试（8 个）
+    test_posts.py                  # 文章/标签测试（12 个）
+    test_background_tasks.py       # 后台任务测试（1 个）
+    test_intelligence_api.py       # 情报 API 测试
+    test_intelligence_classifier.py
+    test_intelligence_ingest.py
+    test_markdown_scanner.py
+
+  app/
     __init__.py
-    auth.py
-    auth.md
-    users.py
-    items.py
-    posts.py
-  models/
-    __init__.py
-    user.py
-    item.py
-    post.py
-    tag.py
-    response.py
-  schemas/
-    __init__.py
-    auth.py
-  services/
-    __init__.py
-    auth_service.py
-  dependencies/
-    __init__.py
-    auth.py
-  utils/
-    __init__.py
-    auth.py
-  middleware/
-    __init__.py
-  exceptions/
-    __init__.py
+    main.py
+
+    core/
+      __init__.py
+      config.py
+      database.py
+      response.py
+
+    routers/
+      __init__.py
+      auth.py
+      users.py
+      items.py
+      posts.py
+      tasks.py                    # BackgroundTasks 后台任务路由
+      intelligence.py
+
+    models/
+      __init__.py
+      user.py
+      item.py
+      post.py
+      tag.py
+      response.py
+      intelligence.py
+
+    schemas/
+      __init__.py
+      auth.py
+
+    services/
+      __init__.py
+      auth_service.py
+      daily_brief.py
+      intelligence_classifier.py
+      intelligence_ingest.py
+      intelligence_search.py
+      markdown_scanner.py
+
+    dependencies/
+      __init__.py
+      auth.py
+
+    utils/
+      __init__.py
+      auth.py
+
+    middleware/
+      __init__.py
+
+    exceptions/
+      __init__.py
 ```
 
 ## 分层职责
@@ -74,11 +130,15 @@ backend/app/
 | 路由层 | `routers/` | 定义 HTTP API 接口 |
 | 数据模型 | `models/` | 定义 SQLModel 表模型、请求模型和响应模型 |
 | 请求 DTO | `schemas/` | 定义认证相关 Pydantic DTO |
-| 服务层 | `services/` | 放认证相关业务逻辑，例如登录失败追踪、字段校验 |
+| 服务层 | `services/` | 业务逻辑，例如登录失败追踪、情报分类、Markdown 扫描 |
 | 依赖注入 | `dependencies/` | 定义需要被路由复用的依赖，例如当前登录用户 |
 | 工具函数 | `utils/` | 密码哈希、JWT、Refresh Token 等底层工具 |
 | 中间件 | `middleware/` | CORS 和安全响应头 |
 | 异常处理 | `exceptions/` | 全局异常处理器 |
+| 测试 | `tests/` | pytest 测试用例，覆盖认证、CRUD、权限、后台任务 |
+| 迁移 | `alembic/` | Alembic 数据库迁移管理 |
+| 示例 | `examples/` | asyncio 并发、SQLAlchemy 2.0 原生写法等学习参考 |
+| 包管理 | `uv-setup/` | uv 包管理器的 PEP 621 配置和迁移指南 |
 
 ## 应用入口
 
@@ -136,10 +196,11 @@ postgresql+psycopg://postgres:postgres@localhost:5432/fastapi_db
 路由集中注册在 `app/routers/__init__.py`。
 
 ```text
-/api/auth   认证接口
-/api/users  用户接口
-/api/items  物品接口
-/api/posts  文章与标签接口
+/api/auth    认证接口
+/api/users   用户接口
+/api/items   物品接口
+/api/posts   文章与标签接口
+/api/tasks   后台任务演示接口
 ```
 
 ## 认证功能
@@ -225,8 +286,8 @@ DELETE /api/users/{user_id}
 - 获取用户列表
 - 获取单个用户
 - 创建用户
-- 更新用户
-- 删除用户
+- 更新用户（仅超级管理员或用户本人可操作）
+- 删除用户（仅超级管理员或用户本人可操作）
 - 创建和更新用户时进行密码哈希
 - 响应模型隐藏敏感字段
 
@@ -243,8 +304,6 @@ is_superuser
 refresh_token
 token_expires_at
 ```
-
-注意：用户 CRUD 接口当前没有管理员权限控制，更像教学或后台基础接口。
 
 ## 物品管理功能
 
@@ -267,9 +326,9 @@ DELETE /api/items/{item_id}
 
 - 获取物品列表
 - 获取单个物品
-- 创建物品
-- 更新物品
-- 删除物品
+- 创建物品（`owner_id` 从 JWT 当前用户自动获取）
+- 更新物品（仅物品所有者或超级管理员可操作）
+- 删除物品（仅物品所有者或超级管理员可操作）
 - 列表接口支持 `skip` / `limit` 分页
 - 物品通过 `owner_id` 关联用户
 - 列表响应会补充 owner 信息
@@ -309,11 +368,11 @@ POST   /api/posts/{post_id}/unpublish
 
 - 获取文章列表
 - 获取文章详情
-- 创建文章
-- 更新文章
-- 删除文章
-- 发布文章
-- 取消发布文章
+- 创建文章（`author_id` 从 JWT 当前用户自动获取）
+- 更新文章（仅文章作者或超级管理员可操作）
+- 删除文章（仅文章作者或超级管理员可操作）
+- 发布文章（仅文章作者或超级管理员可操作）
+- 取消发布文章（仅文章作者或超级管理员可操作）
 - 查看详情时增加浏览量
 - 按发布时间倒序列表展示
 - 支持分页
@@ -334,8 +393,6 @@ view_count
 created_at
 updated_at
 ```
-
-注意：创建文章时 `author_id` 当前由请求参数传入，代码注释也说明实际项目中应从 JWT Token 中获取当前用户。
 
 ## 标签功能
 
@@ -358,8 +415,8 @@ DELETE /api/posts/{post_id}/tags/{tag_id}
 - 创建标签
 - 更新标签
 - 删除标签
-- 给文章添加标签
-- 从文章移除标签
+- 给文章添加标签（仅文章作者或超级管理员可操作）
+- 从文章移除标签（仅文章作者或超级管理员可操作）
 - 标签名唯一校验
 - 文章和标签多对多关联
 
@@ -371,6 +428,27 @@ name
 description
 created_at
 ```
+
+## 后台任务（BackgroundTasks）
+
+相关文件：
+
+- `app/routers/tasks.py`
+
+接口：
+
+```text
+POST /api/tasks/send-notification   发送通知演示
+POST /api/tasks/audit               操作审计日志演示
+```
+
+已实现能力：
+
+- 使用 FastAPI `BackgroundTasks` 在请求返回后执行异步任务
+- 模拟发送通知（写日志）
+- 模拟审计日志记录（带时间戳和操作人）
+
+用途说明：BackgroundTasks 适合发邮件、写审计日志、异步通知等不需要立即返回结果的场景。
 
 ## 数据关系
 
@@ -386,6 +464,19 @@ Post N --- N Tag
 - `Item.owner_id`：物品和用户多对一
 - `Post.tags`：文章和标签多对多
 - `PostTagLink`：文章标签关联表
+
+## 权限控制总览
+
+| 模块 | 操作 | 权限规则 |
+| --- | --- | --- |
+| users | PUT / DELETE | 仅超级管理员或用户本人 |
+| items | POST | owner_id 从 JWT 自动获取（请求体忽略） |
+| items | PUT / DELETE | 仅物品所有者或超级管理员 |
+| posts | PATCH / DELETE / publish / unpublish | 仅文章作者或超级管理员 |
+| posts | 添加/移除标签 | 仅文章作者或超级管理员 |
+| posts | POST (create) | author_id 从 JWT 自动获取 |
+
+权限校验由 `dependencies/auth.py` 中的 `get_current_user` 依赖注入实现，各路由通过 `current_user: User = Depends(get_current_user)` 获取当前用户后比对 `id` 或 `is_superuser`。
 
 ## 中间件
 
@@ -472,36 +563,90 @@ class ApiResponse(BaseModel, Generic[T]):
 }
 ```
 
-## 目前看到的实现风险
+## 测试体系
 
-### 1. `auth.refresh` 和 `auth.logout` 可能有响应构造 bug
+文件：`tests/` 目录，共 47 个测试用例。
 
-`success_response()` 当前返回 `ApiResponse` 模型对象，但 `auth.py` 的 `refresh` 和 `logout` 中有类似写法：
+### 测试基础设施
 
-```python
-success_response(... )["detail"]
+- `conftest.py`：使用 SQLite 内存数据库 + `StaticPool` + 表清理策略
+- `client` fixture：共享 `db_session`，确保 fixture 创建的测试数据在端点中可见
+- `auth_headers` fixture：普通用户 `testuser` 的认证头
+- `admin_headers` fixture：超级管理员 `admin` 的认证头
+
+### 测试覆盖
+
+| 测试文件 | 用例数 | 覆盖内容 |
+| --- | --- | --- |
+| `test_auth.py` | 8 | 注册、登录、密码错误、用户不存在、me、无 token、登出 |
+| `test_users.py` | 8 | 列表、详情、创建、更新（含越权）、删除（含越权） |
+| `test_items.py` | 8 | 列表、创建、详情、更新（含越权）、删除（含越权） |
+| `test_posts.py` | 12 | 列表、创建、详情、更新（含越权）、发布、取消、删除（含越权）、标签 |
+| `test_background_tasks.py` | 1 | 后台通知任务 |
+
+运行方式：
+
+```bash
+cd backend
+PYTHONPATH=. pytest tests/ -v
 ```
 
-这会把 Pydantic 模型当字典使用，运行时可能报错。
+## Alembic 数据库迁移
 
-更一致的写法应类似登录接口：
+相关文件：
 
-```python
-response_data = success_response(...).model_dump_json()
-response = Response(content=response_data, media_type="application/json")
+- `alembic.ini` — Alembic 配置文件
+- `alembic/env.py` — 迁移环境（已集成 SQLModel metadata，支持自动生成）
+- `alembic/script.py.mako` — 迁移脚本模板
+- `alembic/versions/` — 迁移版本存放目录
+
+常用命令：
+
+```bash
+# 生成迁移脚本（自动检测模型变化）
+alembic revision --autogenerate -m "描述"
+
+# 升级到最新版本
+alembic upgrade head
+
+# 回滚一个版本
+alembic downgrade -1
+
+# 查看当前版本
+alembic current
 ```
 
-### 2. 权限控制还不完整
+注意：当前启动时仍使用 `SQLModel.metadata.create_all(engine)` 自动建表（适合开发），生产环境应使用 `alembic upgrade head`。
 
-当前 `users`、`items`、`posts` 的大部分 CRUD 接口没有严格依赖当前登录用户。
+## 配套学习资源
 
-例如：
+### asyncio / httpx 异步并发
 
-- 用户 CRUD 没有管理员权限限制。
-- 创建文章时 `author_id` 由请求参数传入，而不是从 JWT 当前用户中读取。
-- 物品 CRUD 没有限制只能由 owner 操作。
+文件：`examples/async_demo.py`
 
-### 3. 登录失败追踪使用内存存储
+包含 4 个从基础到进阶的示例：
+
+1. 基本异步 HTTP 请求
+2. `asyncio.gather` 并发请求多个 API
+3. 带超时和重试的异步客户端
+4. `asyncio.Semaphore` 并发限制
+
+### SQLAlchemy 2.0 原生 ORM
+
+文件：`examples/sqlalchemy_native_demo.py`
+
+演示纯 SQLAlchemy 2.0 的 `DeclarativeBase`、`Mapped`、`mapped_column`、`relationship` 等新式声明语法，并与 SQLModel 进行对比。
+
+### uv 包管理
+
+文件：`uv-setup/`
+
+- `pyproject.toml`：PEP 621 标准的 uv 项目配置
+- `README.md`：uv 迁移指南，含 pip/poetry 对比和 npm/pnpm 前端类比
+
+## 仍存在的实现风险
+
+### 1. 登录失败追踪使用内存存储
 
 `LoginAttemptTracker` 使用进程内内存保存失败次数。
 
@@ -512,7 +657,7 @@ response = Response(content=response_data, media_type="application/json")
 
 生产环境更适合使用 Redis。
 
-### 4. 自动建表适合开发，不适合正式迁移
+### 2. 自动建表适合开发，不适合正式迁移
 
 当前启动时调用：
 
@@ -520,9 +665,9 @@ response = Response(content=response_data, media_type="application/json")
 SQLModel.metadata.create_all(engine)
 ```
 
-这适合开发阶段快速建表。生产环境建议使用 Alembic 管理数据库迁移。
+这适合开发阶段快速建表。生产环境建议使用 Alembic 管理数据库迁移（已配置就绪，需切换启动方式）。
 
-### 5. 默认配置不适合生产
+### 3. 默认配置不适合生产
 
 当前默认配置包括：
 
@@ -547,15 +692,20 @@ SQLModel.metadata.create_all(engine)
 - Refresh Token
 - CRUD
 - 多对多关系
+- 权限控制（JWT 注入 + 所有权/角色校验）
+- BackgroundTasks 后台任务
 - 中间件
 - 异常处理
 - 统一响应
+- pytest 测试体系
+- Alembic 迁移
+- asyncio/httpx 异步并发
+- SQLAlchemy 2.0 原生 ORM
+- uv 包管理
 
 如果继续演进，建议优先处理：
 
-1. 修复 `refresh/logout` 响应构造问题。
-2. 把文章作者改为从当前登录用户读取。
-3. 给用户、物品、文章接口补权限控制。
-4. 用 Alembic 替代启动自动建表。
-5. 把登录失败追踪迁移到 Redis。
-6. 清理 `__pycache__`，避免缓存文件进入项目结构。
+1. 把登录失败追踪迁移到 Redis。
+2. 生产环境切换为 Alembic 启动迁移。
+3. 清理 `__pycache__`，避免缓存文件进入项目结构。
+4. 前端 `create_post` 调用去掉 `owner_id` 参数（后端已忽略）。

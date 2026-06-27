@@ -23,6 +23,7 @@ from app.core.response import success_response, error_response
 from app.models.user import User, UserCreate, UserUpdate, UserResponse
 from app.models.response import ApiResponse
 from app.utils.auth import get_password_hash
+from app.dependencies.auth import get_current_user
 
 # 创建 APIRouter 实例
 router = APIRouter()
@@ -65,7 +66,7 @@ def get_user(user_id: int, session: Session = Depends(get_session)):
     user = session.get(User, user_id)
     if not user:
         return error_response(message="用户不存在", error="NotFound")
-    return success_response(data=user, msg="获取用户信息成功")
+    return success_response(data=user, message="获取用户信息成功")
 
 
 @router.post("/", response_model=ApiResponse[UserResponse])
@@ -112,16 +113,22 @@ def create_user(user: UserCreate, session: Session = Depends(get_session)):
 
 
 @router.put("/{user_id}", response_model=ApiResponse[UserResponse])
-def update_user(user_id: int, user: UserUpdate, session: Session = Depends(get_session)):
+def update_user(
+    user_id: int,
+    user: UserUpdate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """
     更新用户
 
-    更新指定用户的信息。
+    更新指定用户的信息。仅超级管理员或用户本人可操作。
     使用 Pydantic 的 exclude_unset=True，只更新提供的字段。
 
     Args:
         user_id: 用户 ID（URL 路径参数）
         user: 用户更新数据（请求体）
+        current_user: 当前登录用户（JWT 自动解析）
         session: 数据库会话
 
     Returns:
@@ -129,10 +136,13 @@ def update_user(user_id: int, user: UserUpdate, session: Session = Depends(get_s
 
     Raises:
         HTTPException 404: 用户不存在
+        HTTPException 403: 无权限操作
     """
     db_user = session.get(User, user_id)
     if not db_user:
         return error_response(message="用户不存在", error="NotFound")
+    if db_user.id != current_user.id and not current_user.is_superuser:
+        return error_response(message="无权操作此用户", error="Forbidden")
 
     # 将请求中的非空字段更新到数据库对象
     user_data = user.model_dump(exclude_unset=True)
@@ -151,14 +161,19 @@ def update_user(user_id: int, user: UserUpdate, session: Session = Depends(get_s
 
 
 @router.delete("/{user_id}", response_model=ApiResponse)
-def delete_user(user_id: int, session: Session = Depends(get_session)):
+def delete_user(
+    user_id: int,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """
     删除用户
 
-    删除指定的用户记录。
+    删除指定的用户记录。仅超级管理员或用户本人可操作。
 
     Args:
         user_id: 用户 ID（URL 路径参数）
+        current_user: 当前登录用户（JWT 自动解析）
         session: 数据库会话
 
     Returns:
@@ -166,10 +181,13 @@ def delete_user(user_id: int, session: Session = Depends(get_session)):
 
     Raises:
         HTTPException 404: 用户不存在
+        HTTPException 403: 无权限操作
     """
     user = session.get(User, user_id)
     if not user:
         return error_response(message="用户不存在", error="NotFound")
+    if user.id != current_user.id and not current_user.is_superuser:
+        return error_response(message="无权操作此用户", error="Forbidden")
 
     session.delete(user)
     session.commit()

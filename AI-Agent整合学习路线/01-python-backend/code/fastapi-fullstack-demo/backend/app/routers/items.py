@@ -22,6 +22,7 @@ from app.core.response import success_response, error_response
 from app.models.item import Item, ItemCreate, ItemUpdate, ItemResponse
 from app.models.user import User
 from app.models.response import ApiResponse
+from app.dependencies.auth import get_current_user
 
 # 创建 APIRouter 实例
 router = APIRouter()
@@ -85,21 +86,32 @@ def get_item(item_id: int, session: Session = Depends(get_session)):
     return success_response(data=item, message="获取物品信息成功")
 
 
-@router.post("/", response_model=ApiResponse[ItemResponse])
-def create_item(item: ItemCreate, session: Session = Depends(get_session)):
+@router.post("/", response_model=ApiResponse[ItemResponse], status_code=status.HTTP_201_CREATED)
+def create_item(
+    item: ItemCreate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """
     创建新物品
 
-    创建一个新的物品记录。
+    创建一个新的物品记录。owner_id 从 JWT 当前用户自动获取。
 
     Args:
         item: 物品创建数据（请求体）
+        current_user: 当前登录用户（JWT 自动解析）
         session: 数据库会话
 
     Returns:
         ApiResponse[ItemResponse]: 包含创建成功后的物品信息的统一响应
     """
-    db_item = Item.model_validate(item)
+    db_item = Item(
+        title=item.title,
+        description=item.description,
+        price=item.price,
+        tax=item.tax,
+        owner_id=current_user.id,
+    )
     session.add(db_item)
     session.commit()
     session.refresh(db_item)
@@ -107,16 +119,22 @@ def create_item(item: ItemCreate, session: Session = Depends(get_session)):
 
 
 @router.put("/{item_id}", response_model=ApiResponse[ItemResponse])
-def update_item(item_id: int, item: ItemUpdate, session: Session = Depends(get_session)):
+def update_item(
+    item_id: int,
+    item: ItemUpdate,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """
     更新物品
 
-    更新指定物品的信息。
+    更新指定物品的信息。仅物品所有者或超级管理员可操作。
     使用 Pydantic 的 exclude_unset=True，只更新提供的字段。
 
     Args:
         item_id: 物品 ID（URL 路径参数）
         item: 物品更新数据（请求体）
+        current_user: 当前登录用户（JWT 自动解析）
         session: 数据库会话
 
     Returns:
@@ -124,10 +142,13 @@ def update_item(item_id: int, item: ItemUpdate, session: Session = Depends(get_s
 
     Raises:
         HTTPException 404: 物品不存在
+        HTTPException 403: 无权限操作
     """
     db_item = session.get(Item, item_id)
     if not db_item:
         return error_response(message="物品不存在", error="NotFound")
+    if db_item.owner_id != current_user.id and not current_user.is_superuser:
+        return error_response(message="无权操作此物品", error="Forbidden")
 
     # 将请求中的非空字段更新到数据库对象
     item_data = item.model_dump(exclude_unset=True)
@@ -141,14 +162,19 @@ def update_item(item_id: int, item: ItemUpdate, session: Session = Depends(get_s
 
 
 @router.delete("/{item_id}", response_model=ApiResponse)
-def delete_item(item_id: int, session: Session = Depends(get_session)):
+def delete_item(
+    item_id: int,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session)
+):
     """
     删除物品
 
-    删除指定的物品记录。
+    删除指定的物品记录。仅物品所有者或超级管理员可操作。
 
     Args:
         item_id: 物品 ID（URL 路径参数）
+        current_user: 当前登录用户（JWT 自动解析）
         session: 数据库会话
 
     Returns:
@@ -156,10 +182,13 @@ def delete_item(item_id: int, session: Session = Depends(get_session)):
 
     Raises:
         HTTPException 404: 物品不存在
+        HTTPException 403: 无权限操作
     """
     item = session.get(Item, item_id)
     if not item:
         return error_response(message="物品不存在", error="NotFound")
+    if item.owner_id != current_user.id and not current_user.is_superuser:
+        return error_response(message="无权操作此物品", error="Forbidden")
 
     session.delete(item)
     session.commit()

@@ -333,7 +333,8 @@ async def refresh_access_token(
                 "expires_in": int(access_token_expires.total_seconds())
             },
             message="Token 刷新成功"
-        )["detail"]
+        ).model_dump_json(),
+        media_type="application/json"
     )
     
     # 更新 HttpOnly Cookie 中的 refresh token
@@ -374,7 +375,7 @@ async def logout(
     
     # 创建响应并清除 Cookie
     response = Response(
-        content=success_response(message="登出成功")["detail"]
+        content=success_response(message="登出成功").model_dump_json()
     )
     
     # 删除 refresh_token Cookie

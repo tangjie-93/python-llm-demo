@@ -63,13 +63,13 @@ class ItemCreate(SQLModel):
         description: 物品描述（可选）
         price: 价格（必填，必须大于 0）
         tax: 税费（可选，必须大于等于 0）
-        owner_id: 所有者 ID（必填）
+        owner_id: 所有者 ID（可选，默认从 JWT 当前用户获取）
     """
     title: str
     description: Optional[str] = None
     price: float
     tax: Optional[float] = None
-    owner_id: int
+    owner_id: Optional[int] = None
 
 
 class ItemUpdate(SQLModel):

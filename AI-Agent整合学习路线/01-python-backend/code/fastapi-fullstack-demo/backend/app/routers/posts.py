@@ -26,6 +26,7 @@ from app.models.tag import (
 )
 from app.models.user import User
 from app.models.response import ApiResponse
+from app.dependencies.auth import get_current_user
 
 router = APIRouter(prefix="/posts", tags=["posts"])
 
@@ -95,7 +96,7 @@ def get_post(
 @router.post("/", response_model=ApiResponse[PostResponse], status_code=status.HTTP_201_CREATED)
 def create_post(
     post_data: PostCreate,
-    author_id: int,  # 实际项目中应该从 JWT Token 中获取
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
@@ -103,17 +104,12 @@ def create_post(
 
     创建文章并关联标签（如果提供了 tag_ids）。
     """
-    # 验证作者是否存在
-    author = session.get(User, author_id)
-    if not author:
-        return error_response(message="作者不存在", error="NotFound")
-
     # 创建文章
     post = Post(
         title=post_data.title,
         content=post_data.content,
         summary=post_data.summary,
-        author_id=author_id,
+        author_id=current_user.id,
         is_published=post_data.is_published
     )
 
@@ -136,6 +132,7 @@ def create_post(
 def update_post(
     post_id: int,
     post_data: PostUpdate,
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
@@ -143,10 +140,13 @@ def update_post(
 
     支持部分更新，只有提供的字段才会被更新。
     如果提供了 tag_ids，会替换原有的标签。
+    仅文章作者或超级管理员可操作。
     """
     post = session.get(Post, post_id)
     if not post:
         return error_response(message="文章不存在", error="NotFound")
+    if post.author_id != current_user.id and not current_user.is_superuser:
+        return error_response(message="无权操作此文章", error="Forbidden")
 
     # 更新基本字段
     update_data = post_data.model_dump(exclude_unset=True, exclude={"tag_ids"})
@@ -174,16 +174,20 @@ def update_post(
 @router.delete("/{post_id}", response_model=ApiResponse)
 def delete_post(
     post_id: int,
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
     删除文章
 
     删除文章及其标签关联（关联表记录会自动删除）。
+    仅文章作者或超级管理员可操作。
     """
     post = session.get(Post, post_id)
     if not post:
         return error_response(message="文章不存在", error="NotFound")
+    if post.author_id != current_user.id and not current_user.is_superuser:
+        return error_response(message="无权操作此文章", error="Forbidden")
 
     session.delete(post)
     session.commit()
@@ -194,16 +198,19 @@ def delete_post(
 @router.post("/{post_id}/publish", response_model=ApiResponse[PostResponse])
 def publish_post(
     post_id: int,
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
     发布文章
 
-    将文章状态设置为已发布。
+    将文章状态设置为已发布。仅文章作者或超级管理员可操作。
     """
     post = session.get(Post, post_id)
     if not post:
         return error_response(message="文章不存在", error="NotFound")
+    if post.author_id != current_user.id and not current_user.is_superuser:
+        return error_response(message="无权操作此文章", error="Forbidden")
 
     post.is_published = True
     post.updated_at = datetime.now()
@@ -217,16 +224,19 @@ def publish_post(
 @router.post("/{post_id}/unpublish", response_model=ApiResponse[PostResponse])
 def unpublish_post(
     post_id: int,
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
     取消发布文章
 
-    将文章状态设置为未发布。
+    将文章状态设置为未发布。仅文章作者或超级管理员可操作。
     """
     post = session.get(Post, post_id)
     if not post:
         return error_response(message="文章不存在", error="NotFound")
+    if post.author_id != current_user.id and not current_user.is_superuser:
+        return error_response(message="无权操作此文章", error="Forbidden")
 
     post.is_published = False
     post.updated_at = datetime.now()
@@ -348,14 +358,19 @@ def delete_tag(
 def add_tag_to_post(
     post_id: int,
     tag_id: int,
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
     为文章添加标签
+
+    仅文章作者或超级管理员可操作。
     """
     post = session.get(Post, post_id)
     if not post:
         return error_response(message="文章不存在", error="NotFound")
+    if post.author_id != current_user.id and not current_user.is_superuser:
+        return error_response(message="无权操作此文章", error="Forbidden")
 
     tag = session.get(Tag, tag_id)
     if not tag:
@@ -378,14 +393,19 @@ def add_tag_to_post(
 def remove_tag_from_post(
     post_id: int,
     tag_id: int,
+    current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
     """
     从文章移除标签
+
+    仅文章作者或超级管理员可操作。
     """
     post = session.get(Post, post_id)
     if not post:
         return error_response(message="文章不存在", error="NotFound")
+    if post.author_id != current_user.id and not current_user.is_superuser:
+        return error_response(message="无权操作此文章", error="Forbidden")
 
     tag = session.get(Tag, tag_id)
     if not tag:

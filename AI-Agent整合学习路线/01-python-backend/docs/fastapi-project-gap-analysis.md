@@ -15,8 +15,8 @@
 
 - 它能很好覆盖第 3 周 FastAPI 和第 4 周数据库/JWT 实战中的大部分内容。
 - 它不能系统覆盖第 1 周 Python 基础语法训练。
-- 它不能系统覆盖第 2 周 uv、asyncio、httpx、异步并发训练。
-- 它目前缺少测试体系、Alembic 迁移、uv 依赖管理和 SQLAlchemy 2.0 原生写法训练。
+- 它不能系统覆盖第 2 周 uv、asyncio、httpx、异步并发训练。（⚠️ 注意：`uv 包管理`、`asyncio / httpx` 已有示例文件覆盖，但系统性学习仍需 `01-python-backend` 学习包。）
+- 它已补齐测试体系、Alembic 迁移、uv 依赖管理和 SQLAlchemy 2.0 原生写法训练。
 
 因此推荐用法是：
 
@@ -95,24 +95,24 @@
 | 装饰器 | 部分覆盖 | 使用了 FastAPI 路由装饰器，但没有讲闭包和自定义装饰器 |
 | 上下文管理器 | 部分覆盖 | 数据库 Session 使用 `with`，但缺少专门训练 |
 | 异常处理 | 覆盖 | 有全局异常处理器和业务错误处理 |
-| pytest | 未覆盖 | 未看到 tests 目录或测试文件 |
-| uv 包管理 | 未覆盖 | 当前主要使用 Poetry、requirements、venv |
+| pytest | ✅ 已覆盖 | 已有 `tests/conftest.py`、`tests/test_auth.py`、`tests/test_users.py`、`tests/test_items.py`、`tests/test_posts.py`、`tests/test_background_tasks.py` |
+| uv 包管理 | ✅ 已覆盖 | 已有 `uv-setup/pyproject.toml` 和 `uv-setup/README.md` 迁移指南 |
 | pyproject.toml | 覆盖 | backend 有 `pyproject.toml` |
 | asyncio 基础 | 部分覆盖 | 有 async 路由，但没有系统的 asyncio 并发练习 |
-| httpx 异步客户端 | 未覆盖 | 未看到 httpx 并发请求练习 |
+| httpx 异步客户端 | ✅ 已覆盖 | 已有 `examples/async_demo.py` 异步并发练习 |
 | FastAPI 路由 | 覆盖 | auth/users/items/posts/tags 路由完整 |
 | 路径参数、查询参数、请求体 | 覆盖 | 多处接口使用 |
 | Pydantic / SQLModel 模型 | 覆盖 | 使用 SQLModel 定义表、请求和响应模型 |
 | Depends 依赖注入 | 覆盖 | 数据库 Session 和当前用户依赖均已实现 |
 | CORS 中间件 | 覆盖 | 已配置 |
 | 自定义异常处理器 | 覆盖 | 已配置 HTTP、校验、通用异常处理 |
-| BackgroundTasks | 未覆盖 | 未看到后台任务使用 |
+| BackgroundTasks | ✅ 已覆盖 | 已有 `app/routers/tasks.py` 后台任务路由 |
 | JWT 认证 | 覆盖 | 登录、注册、当前用户、refresh、logout 已实现 |
 | 密码哈希 | 覆盖 | 使用 passlib |
 | 数据库 CRUD | 覆盖 | 用户、物品、文章、标签均有 CRUD |
-| SQLAlchemy 2.0 原生写法 | 部分覆盖 | 项目使用 SQLModel，不是纯 SQLAlchemy 2.0 `Mapped/mapped_column` |
+| SQLAlchemy 2.0 原生写法 | ✅ 已覆盖 | 已有 `examples/sqlalchemy_native_demo.py` 纯 SQLAlchemy 2.0 演示 |
 | AsyncSession | 未覆盖 | 当前使用同步 `Session` |
-| Alembic 迁移 | 未覆盖 | 未看到 Alembic 配置 |
+| Alembic 迁移 | ✅ 已覆盖 | 已有 `alembic.ini`、`alembic/env.py`、`alembic/script.py.mako` |
 | dev-note-api | 功能等价但不一致 | 当前项目是用户/物品/博客/标签系统，不是笔记 API |
 | README 和项目说明 | 覆盖 | 已有 README、backend/frontend 结构文档 |
 
@@ -469,12 +469,12 @@
 
 优先顺序：
 
-1. 修复 `auth.refresh` / `auth.logout` 响应构造问题。
-2. 添加 pytest 测试。
-3. 添加 Alembic。
-4. 添加 uv 管理版本。
-5. 文章作者改为从 JWT 当前用户读取。
-6. 用户、物品、文章补权限控制。
+1. ✅ 修复 `auth.refresh` / `auth.logout` 响应构造问题。（已完成）
+2. ✅ 添加 pytest 测试。（已完成）
+3. ✅ 添加 Alembic。（已完成）
+4. ✅ 添加 uv 管理版本。（已完成）
+5. ✅ 文章作者改为从 JWT 当前用户读取。（已完成 — `create_post` 使用 JWT 当前用户）
+6. ✅ 用户、物品、文章补权限控制。（已完成 — items 创建/更新/删除校验所有权、posts 更新/删除/发布/标签操作校验作者、users 更新/删除需超级管理员或本人）
 
 ## 最终判断
 
@@ -490,3 +490,22 @@
 6. Alembic 迁移。
 7. BackgroundTasks。
 8. 严格意义上的 `dev-note-api` 笔记业务模型。
+
+## 已完成的改进（2026-06）
+
+以下为本次补齐的所有工程缺口：
+
+| 编号 | 改进项 | 状态 | 产物 |
+| --- | --- | --- | --- |
+| 1 | Python 基础语法专项训练 | ⏭️ 跳过 | 非代码类学习项，保留在 `01-python-backend` 学习包中 |
+| 2 | uv 包管理 | ✅ 已完成 | `uv-setup/pyproject.toml`、`uv-setup/README.md` 迁移指南 |
+| 3 | asyncio / httpx 异步并发 | ✅ 已完成 | `examples/async_demo.py` |
+| 4 | pytest / TestClient 测试 | ✅ 已完成 | `tests/conftest.py`、`tests/test_auth.py`、`tests/test_users.py`、`tests/test_items.py`、`tests/test_posts.py`、`tests/test_background_tasks.py` |
+| 5 | SQLAlchemy 2.0 原生写法 | ✅ 已完成 | `examples/sqlalchemy_native_demo.py` |
+| 6 | Alembic 迁移 | ✅ 已完成 | `alembic.ini`、`alembic/env.py`、`alembic/script.py.mako` |
+| 7 | BackgroundTasks | ✅ 已完成 | `app/routers/tasks.py` |
+| 8 | dev-note-api | ♻️ 复用 | 使用现有 post/tag 系统作为等价业务形态 |
+| 9 | `auth.refresh` 响应 Bug | ✅ 已修复 | — |
+| 10 | `auth.logout` 响应 Bug | ✅ 已修复 | — |
+| 11 | `create_post` 使用 JWT 当前用户 | ✅ 已完成 | — |
+| 12 | 全模块权限控制 | ✅ 已完成 | items/posts/users 权限校验 |

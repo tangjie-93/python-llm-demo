@@ -1,0 +1,24 @@
+[project]
+name = "fastapi-backend"
+version = "0.1.0"
+description = "FastAPI 后端项目 - uv 管理版本"
+requires-python = ">=3.11"
+
+dependencies = [
+    "fastapi>=0.135.0",
+    "uvicorn[standard]>=0.34.0",
+    "pydantic>=2.0.0",
+    "pydantic-settings>=2.0.0",
+    "sqlmodel>=0.0.22",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
+    "python-multipart>=0.0.6",
+    "psycopg[binary]>=3.2.0",
+    "alembic>=1.14.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27.0",
+]
