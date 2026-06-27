@@ -11,10 +11,14 @@
             "id": "03b56d70e05c3b24",
             "type": "leaf",
             "state": {
-              "type": "empty",
-              "state": {},
+              "type": "markdown",
+              "state": {
+                "file": "AI-Agent整合学习路线/docs/superpowers/specs/2026-06-24-roadmap-docs-cleanup-design.md",
+                "mode": "source",
+                "source": false
+              },
               "icon": "lucide-file",
-              "title": "新标签页"
+              "title": "2026-06-24-roadmap-docs-cleanup-design"
             }
           }
         ]
@@ -90,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "AI-Agent开发学习路线细化版/00-总览与学习节奏.md",
+                "file": "AI-Agent整合学习路线/docs/superpowers/specs/2026-06-24-roadmap-docs-cleanup-design.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -100,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "00-总览与学习节奏 的反向链接列表"
+              "title": "2026-06-24-roadmap-docs-cleanup-design 的反向链接列表"
             }
           },
           {
@@ -160,13 +164,22 @@
               "icon": "lucide-list",
               "title": "00-总览与学习节奏 的大纲"
             }
+          },
+          {
+            "id": "ccf8510fe2506298",
+            "type": "leaf",
+            "state": {
+              "type": "claudian-view",
+              "state": {},
+              "icon": "bot",
+              "title": "Claudian"
+            }
           }
         ]
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 767.5
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -180,8 +193,9 @@
       "realclaudian:Open Claudian": false
     }
   },
-  "active": "050f5c7eeeb371bc",
+  "active": "03b56d70e05c3b24",
   "lastOpenFiles": [
+    "AI-Agent整合学习路线/README.md",
     "AI-Agent整合学习路线/00-roadmap/docs/archive/README.md",
     "AI-Agent整合学习路线/00-roadmap/docs/archive/detailed-version/09-glossary.md",
     "AI-Agent整合学习路线/00-roadmap/docs/archive/detailed-version/08-learning-resources.md",
