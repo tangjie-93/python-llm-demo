@@ -1,10 +1,10 @@
-# Roadmap Docs Cleanup Plan
+# 路线图文档清理计划
 
-## Goal
+## 目标
 
-Make `00-roadmap/docs` visually clean by keeping one numbered mainline only.
+让 `00-roadmap/docs` 目录直观整洁，只保留一条编号主线。
 
-## Target root structure
+## 目标根结构
 
 - `README.md`
 - `00-总览与学习节奏.md`
@@ -16,10 +16,10 @@ Make `00-roadmap/docs` visually clean by keeping one numbered mainline only.
 - `06-术语表.md`
 - `archive/`
 
-## Tasks
+## 任务
 
-1. Create `00-roadmap/docs/archive/`.
-2. Move non-mainline Markdown files into `archive/`:
+1. 创建 `00-roadmap/docs/archive/` 目录。
+2. 将非主线 Markdown 文件移入 `archive/`：
    - `99-来源映射.md`
    - `阶段学习包说明.md`
    - `细化版-00-总览与学习节奏.md`
@@ -27,11 +27,11 @@ Make `00-roadmap/docs` visually clean by keeping one numbered mainline only.
    - `细化版-09-术语表.md`
    - `细化版README.md`
    - `AI-Agent原README.md`
-3. Add `00-roadmap/docs/README.md` as the root entry point.
-4. Verify the root directory contains only the target structure.
-5. Verify all expected historical files exist in `archive/`.
+3. 添加 `00-roadmap/docs/README.md` 作为根入口文件。
+4. 验证根目录仅包含目标结构中的文件。
+5. 验证 `archive/` 中包含所有预期的历史文件。
 
-## Notes
+## 备注
 
-- Do not modify unrelated workspace changes such as `../.obsidian/workspace.json`.
-- Do not delete historical Markdown files; archive them for traceability.
+- 不要修改不相关的工作区变更，如 `../.obsidian/workspace.json`。
+- 不要删除历史 Markdown 文件；将其归档以便追溯。

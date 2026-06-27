@@ -1,70 +1,70 @@
-# AI Agent Intelligence Site Implementation Plan
+# AI Agent 情报站实施计划
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **面向 agentic 工作程序：** 必须使用子技能：推荐使用 superpowers:subagent-driven-development 或 superpowers:executing-plans 按任务逐项实施本计划。步骤使用复选框（`- [ ]`）语法进行跟踪。
 
-**Goal:** Build the first runnable version of a public AI Agent developer/learner intelligence site inside the existing FastAPI + Vue demo.
+**目标：** 在现有 FastAPI + Vue 演示项目中构建一个面向 AI Agent 开发者/学习者的公共情报站的首个可运行版本。
 
-**Architecture:** Add a focused `intelligence` domain to the existing backend with SQLModel tables, deterministic content classification, RSS/static ingestion, local Markdown scanning, public read APIs, search, and source-cited Q&A. Add public Vue routes that show a homepage, category pages, content detail pages, daily briefs, and a search/Q&A view without requiring login.
+**架构：** 在现有后端中添加一个专注的 `intelligence` 领域，包含 SQLModel 表、确定性内容分类、RSS/静态内容采集、本地 Markdown 扫描、公开读取 API、搜索以及带来源引用的问答。添加公开 Vue 路由，显示首页、分类页、内容详情页、每日简报和搜索/问答视图，无需登录。
 
-**Tech Stack:** FastAPI, SQLModel, SQLite for local MVP, pytest, Vue 3, Vue Router, Axios, Element Plus, TypeScript.
+**技术栈：** FastAPI、SQLModel、SQLite（本地 MVP 阶段）、pytest、Vue 3、Vue Router、Axios、Element Plus、TypeScript。
 
 ---
 
-## File Structure
+## 文件结构
 
-Backend files:
+后端文件：
 
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/app/models/intelligence.py`
-  - SQLModel tables and response schemas for content items, local notes, daily briefs, embeddings placeholder chunks, and source references.
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intelligence_classifier.py`
-  - Deterministic classifier used by tests and local development. It mirrors the LLM output contract without requiring network calls.
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intelligence_ingest.py`
-  - Ingests static seed items, deduplicates by URL/content hash, classifies, and persists records.
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/app/services/markdown_scanner.py`
-  - Scans configured Markdown roots, honors `publish: true`, extracts metadata, classifies, and persists local notes.
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/app/services/daily_brief.py`
-  - Groups important content by category and creates one daily brief per date.
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intelligence_search.py`
-  - Keyword search and simple cited Q&A over public content and public local notes.
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/app/routers/intelligence.py`
-  - Public API routes under `/api/intelligence`.
-- Modify: `01-python-backend/code/fastapi-fullstack-demo/backend/app/core/database.py`
-  - Import intelligence models so `create_db_and_tables()` creates their tables.
-- Modify: `01-python-backend/code/fastapi-fullstack-demo/backend/app/routers/__init__.py`
-  - Register the intelligence router.
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_intelligence_classifier.py`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_intelligence_ingest.py`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_markdown_scanner.py`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_intelligence_api.py`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/app/models/intelligence.py`
+  - 内容条目、本地笔记、每日简报、嵌入占位块和来源引用的 SQLModel 表及响应模式。
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intelligence_classifier.py`
+  - 供测试和本地开发使用的确定性分类器。它镜像 LLM 输出契约，无需网络调用。
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intelligence_ingest.py`
+  - 采集静态种子条目，按 URL/内容哈希去重，分类并持久化记录。
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/app/services/markdown_scanner.py`
+  - 扫描配置的 Markdown 根目录，遵循 `publish: true` 标记，提取元数据，分类并持久化本地笔记。
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/app/services/daily_brief.py`
+  - 按分类分组重要内容，每天生成一份每日简报。
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intelligence_search.py`
+  - 对公开内容和公开本地笔记进行关键词搜索及简单带引用的问答。
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/app/routers/intelligence.py`
+  - `/api/intelligence` 下的公开 API 路由。
+- 修改：`01-python-backend/code/fastapi-fullstack-demo/backend/app/core/database.py`
+  - 导入 intelligence 模型，使 `create_db_and_tables()` 创建其表。
+- 修改：`01-python-backend/code/fastapi-fullstack-demo/backend/app/routers/__init__.py`
+  - 注册 intelligence 路由。
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_intelligence_classifier.py`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_intelligence_ingest.py`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_markdown_scanner.py`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_intelligence_api.py`
 
-Frontend files:
+前端文件：
 
-- Create: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/types/intelligence.ts`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/api/intelligence.ts`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/PublicLayout.vue`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/HomePage.vue`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/CategoryPage.vue`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/ContentDetailPage.vue`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/BriefsPage.vue`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/SearchPage.vue`
-- Modify: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/router/index.ts`
-  - Add public routes before the authenticated layout.
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/types/intelligence.ts`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/api/intelligence.ts`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/PublicLayout.vue`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/HomePage.vue`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/CategoryPage.vue`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/ContentDetailPage.vue`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/BriefsPage.vue`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/SearchPage.vue`
+- 修改：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/router/index.ts`
+  - 在认证布局之前添加公开路由。
 
-Docs:
+文档：
 
-- Modify: `01-python-backend/code/fastapi-fullstack-demo/README.md`
-  - Add local run instructions for the intelligence site.
+- 修改：`01-python-backend/code/fastapi-fullstack-demo/README.md`
+  - 添加情报站的本地运行说明。
 
-## Task 1: Backend Domain Models
+## 任务 1：后端领域模型
 
-**Files:**
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/app/models/intelligence.py`
-- Modify: `01-python-backend/code/fastapi-fullstack-demo/backend/app/core/database.py`
-- Test: `01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_intelligence_classifier.py`
+**涉及文件：**
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/app/models/intelligence.py`
+- 修改：`01-python-backend/code/fastapi-fullstack-demo/backend/app/core/database.py`
+- 测试：`01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_intelligence_classifier.py`
 
-- [ ] **Step 1: Add the domain model file**
+- [ ] **步骤 1：添加领域模型文件**
 
-Create `backend/app/models/intelligence.py` with these models:
+创建 `backend/app/models/intelligence.py`，包含以下模型：
 
 ```python
 from __future__ import annotations
@@ -229,17 +229,17 @@ class AskResponse(SQLModel):
     refused: bool = False
 ```
 
-- [ ] **Step 2: Register the models with SQLModel metadata**
+- [ ] **步骤 2：将模型注册到 SQLModel 元数据**
 
-Modify `backend/app/core/database.py` and add this import near the existing model imports:
+修改 `backend/app/core/database.py`，在现有模型导入附近添加以下导入：
 
 ```python
 from app.models.intelligence import ContentItem, DailyBrief, IntelligenceChunk, LocalNote
 ```
 
-- [ ] **Step 3: Add a classifier test file with import checks**
+- [ ] **步骤 3：添加带导入检查的分类器测试文件**
 
-Create `backend/tests/test_intelligence_classifier.py`:
+创建 `backend/tests/test_intelligence_classifier.py`：
 
 ```python
 from app.models.intelligence import IntelligenceCategory
@@ -254,21 +254,21 @@ def test_intelligence_categories_are_fixed_navigation_labels():
     assert "Deployment / Eval / Security" in labels
 ```
 
-- [ ] **Step 4: Run the model import test**
+- [ ] **步骤 4：运行模型导入测试**
 
-Run from `01-python-backend/code/fastapi-fullstack-demo/backend`:
+在 `01-python-backend/code/fastapi-fullstack-demo/backend` 下执行：
 
 ```bash
 pytest tests/test_intelligence_classifier.py -v
 ```
 
-Expected: PASS after the model file exists. If `pytest` is missing, install the project test dependency before continuing:
+预期：模型文件存在后测试通过。如果缺少 `pytest`，请在继续之前安装项目测试依赖：
 
 ```bash
 python -m pip install pytest
 ```
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：提交**
 
 ```bash
 git add 01-python-backend/code/fastapi-fullstack-demo/backend/app/models/intelligence.py \
@@ -277,15 +277,15 @@ git add 01-python-backend/code/fastapi-fullstack-demo/backend/app/models/intelli
 git commit -m "feat: add intelligence domain models"
 ```
 
-## Task 2: Deterministic Classification Service
+## 任务 2：确定性分类服务
 
-**Files:**
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intelligence_classifier.py`
-- Modify: `01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_intelligence_classifier.py`
+**涉及文件：**
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intelligence_classifier.py`
+- 修改：`01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_intelligence_classifier.py`
 
-- [ ] **Step 1: Extend classifier tests**
+- [ ] **步骤 1：扩展分类器测试**
 
-Append to `backend/tests/test_intelligence_classifier.py`:
+追加到 `backend/tests/test_intelligence_classifier.py`：
 
 ```python
 from app.services.intelligence_classifier import classify_text
@@ -320,19 +320,19 @@ def test_classify_unknown_content_is_uncategorized():
     assert result.importance == 2
 ```
 
-- [ ] **Step 2: Run tests and verify failure**
+- [ ] **步骤 2：运行测试并验证失败**
 
-Run:
+执行：
 
 ```bash
 pytest tests/test_intelligence_classifier.py -v
 ```
 
-Expected: FAIL with `ModuleNotFoundError: No module named 'app.services.intelligence_classifier'`.
+预期：失败，报 `ModuleNotFoundError: No module named 'app.services.intelligence_classifier'`。
 
-- [ ] **Step 3: Create the classifier service**
+- [ ] **步骤 3：创建分类器服务**
 
-Create `backend/app/services/intelligence_classifier.py`:
+创建 `backend/app/services/intelligence_classifier.py`：
 
 ```python
 from __future__ import annotations
@@ -433,17 +433,17 @@ def _reason(category: IntelligenceCategory, tags: list[str], importance: int) ->
     return f"与 {tag_text} 相关，适合 AI Agent 开发者跟进，重要性 {importance}/5。"
 ```
 
-- [ ] **Step 4: Run classifier tests**
+- [ ] **步骤 4：运行分类器测试**
 
-Run:
+执行：
 
 ```bash
 pytest tests/test_intelligence_classifier.py -v
 ```
 
-Expected: PASS.
+预期：全部通过。
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：提交**
 
 ```bash
 git add 01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intelligence_classifier.py \
@@ -451,16 +451,16 @@ git add 01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intel
 git commit -m "feat: add intelligence classifier"
 ```
 
-## Task 3: Content Ingestion and Daily Brief Generation
+## 任务 3：内容采集与每日简报生成
 
-**Files:**
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intelligence_ingest.py`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/app/services/daily_brief.py`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_intelligence_ingest.py`
+**涉及文件：**
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intelligence_ingest.py`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/app/services/daily_brief.py`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_intelligence_ingest.py`
 
-- [ ] **Step 1: Add ingestion tests**
+- [ ] **步骤 1：添加采集测试**
 
-Create `backend/tests/test_intelligence_ingest.py`:
+创建 `backend/tests/test_intelligence_ingest.py`：
 
 ```python
 from datetime import date
@@ -531,19 +531,19 @@ def test_generate_daily_brief_groups_items_by_category():
     assert len(brief.sections) >= 2
 ```
 
-- [ ] **Step 2: Run tests and verify failure**
+- [ ] **步骤 2：运行测试并验证失败**
 
-Run:
+执行：
 
 ```bash
 pytest tests/test_intelligence_ingest.py -v
 ```
 
-Expected: FAIL because ingestion and daily brief services do not exist.
+预期：失败，因为采集和每日简报服务尚不存在。
 
-- [ ] **Step 3: Add ingestion service**
+- [ ] **步骤 3：添加采集服务**
 
-Create `backend/app/services/intelligence_ingest.py`:
+创建 `backend/app/services/intelligence_ingest.py`：
 
 ```python
 from __future__ import annotations
@@ -603,9 +603,9 @@ def _content_hash(title: str, text: str) -> str:
     return hashlib.sha256(f"{title}\n{text}".encode("utf-8")).hexdigest()
 ```
 
-- [ ] **Step 4: Add daily brief service**
+- [ ] **步骤 4：添加每日简报服务**
 
-Create `backend/app/services/daily_brief.py`:
+创建 `backend/app/services/daily_brief.py`：
 
 ```python
 from __future__ import annotations
@@ -662,17 +662,17 @@ def generate_daily_brief(session: Session, brief_date: date) -> DailyBrief:
     return brief
 ```
 
-- [ ] **Step 5: Run ingestion tests**
+- [ ] **步骤 5：运行采集测试**
 
-Run:
+执行：
 
 ```bash
 pytest tests/test_intelligence_ingest.py -v
 ```
 
-Expected: PASS.
+预期：全部通过。
 
-- [ ] **Step 6: Commit**
+- [ ] **步骤 6：提交**
 
 ```bash
 git add 01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intelligence_ingest.py \
@@ -681,15 +681,15 @@ git add 01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intel
 git commit -m "feat: ingest intelligence content and briefs"
 ```
 
-## Task 4: Markdown Scanner
+## 任务 4：Markdown 扫描器
 
-**Files:**
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/app/services/markdown_scanner.py`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_markdown_scanner.py`
+**涉及文件：**
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/app/services/markdown_scanner.py`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_markdown_scanner.py`
 
-- [ ] **Step 1: Add scanner tests**
+- [ ] **步骤 1：添加扫描器测试**
 
-Create `backend/tests/test_markdown_scanner.py`:
+创建 `backend/tests/test_markdown_scanner.py`：
 
 ```python
 from pathlib import Path
@@ -728,19 +728,19 @@ def test_scan_markdown_root_only_publishes_marked_notes(tmp_path: Path):
     assert private.publish_status == PublishStatus.PRIVATE
 ```
 
-- [ ] **Step 2: Run scanner tests and verify failure**
+- [ ] **步骤 2：运行扫描器测试并验证失败**
 
-Run:
+执行：
 
 ```bash
 pytest tests/test_markdown_scanner.py -v
 ```
 
-Expected: FAIL because `app.services.markdown_scanner` does not exist.
+预期：失败，因为 `app.services.markdown_scanner` 不存在。
 
-- [ ] **Step 3: Create scanner service**
+- [ ] **步骤 3：创建扫描器服务**
 
-Create `backend/app/services/markdown_scanner.py`:
+创建 `backend/app/services/markdown_scanner.py`：
 
 ```python
 from __future__ import annotations
@@ -823,17 +823,17 @@ def _mtime(path: Path):
     return datetime.fromtimestamp(path.stat().st_mtime)
 ```
 
-- [ ] **Step 4: Run scanner tests**
+- [ ] **步骤 4：运行扫描器测试**
 
-Run:
+执行：
 
 ```bash
 pytest tests/test_markdown_scanner.py -v
 ```
 
-Expected: PASS.
+预期：全部通过。
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：提交**
 
 ```bash
 git add 01-python-backend/code/fastapi-fullstack-demo/backend/app/services/markdown_scanner.py \
@@ -841,17 +841,17 @@ git add 01-python-backend/code/fastapi-fullstack-demo/backend/app/services/markd
 git commit -m "feat: scan markdown notes for intelligence site"
 ```
 
-## Task 5: Public Intelligence API
+## 任务 5：公开情报 API
 
-**Files:**
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intelligence_search.py`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/app/routers/intelligence.py`
-- Modify: `01-python-backend/code/fastapi-fullstack-demo/backend/app/routers/__init__.py`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_intelligence_api.py`
+**涉及文件：**
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intelligence_search.py`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/app/routers/intelligence.py`
+- 修改：`01-python-backend/code/fastapi-fullstack-demo/backend/app/routers/__init__.py`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/backend/tests/test_intelligence_api.py`
 
-- [ ] **Step 1: Add API tests**
+- [ ] **步骤 1：添加 API 测试**
 
-Create `backend/tests/test_intelligence_api.py`:
+创建 `backend/tests/test_intelligence_api.py`：
 
 ```python
 from fastapi.testclient import TestClient
@@ -882,19 +882,19 @@ def test_public_categories_endpoint_lists_navigation_labels():
     assert "RAG" in labels
 ```
 
-- [ ] **Step 2: Run API tests and verify failure**
+- [ ] **步骤 2：运行 API 测试并验证失败**
 
-Run:
+执行：
 
 ```bash
 pytest tests/test_intelligence_api.py -v
 ```
 
-Expected: FAIL with 404 for `/api/intelligence/home`.
+预期：失败，`/api/intelligence/home` 返回 404。
 
-- [ ] **Step 3: Add search service**
+- [ ] **步骤 3：添加搜索服务**
 
-Create `backend/app/services/intelligence_search.py`:
+创建 `backend/app/services/intelligence_search.py`：
 
 ```python
 from __future__ import annotations
@@ -954,9 +954,9 @@ def answer_with_citations(session: Session, question: str) -> AskResponse:
     return AskResponse(answer=answer, citations=citations, refused=False)
 ```
 
-- [ ] **Step 4: Add router**
+- [ ] **步骤 4：添加路由**
 
-Create `backend/app/routers/intelligence.py`:
+创建 `backend/app/routers/intelligence.py`：
 
 ```python
 from __future__ import annotations
@@ -1073,9 +1073,9 @@ def ask(q: str = Query(min_length=1), session: Session = Depends(get_session)):
     return success_response(data=answer, message="问答完成")
 ```
 
-- [ ] **Step 5: Register router**
+- [ ] **步骤 5：注册路由**
 
-Modify `backend/app/routers/__init__.py` to import and include the router. Keep existing routers intact. The final setup should include:
+修改 `backend/app/routers/__init__.py`，导入并包含该路由。保持现有路由不变。最终设置应包含：
 
 ```python
 from fastapi import FastAPI
@@ -1091,17 +1091,17 @@ def setup_routers(app: FastAPI):
     app.include_router(intelligence.router, prefix="/api")
 ```
 
-- [ ] **Step 6: Run API tests**
+- [ ] **步骤 6：运行 API 测试**
 
-Run:
+执行：
 
 ```bash
 pytest tests/test_intelligence_api.py -v
 ```
 
-Expected: PASS.
+预期：全部通过。
 
-- [ ] **Step 7: Commit**
+- [ ] **步骤 7：提交**
 
 ```bash
 git add 01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intelligence_search.py \
@@ -1111,16 +1111,16 @@ git add 01-python-backend/code/fastapi-fullstack-demo/backend/app/services/intel
 git commit -m "feat: expose public intelligence api"
 ```
 
-## Task 6: Public Frontend Routes and API Client
+## 任务 6：公开前端路由与 API 客户端
 
-**Files:**
-- Create: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/types/intelligence.ts`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/api/intelligence.ts`
-- Modify: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/router/index.ts`
+**涉及文件：**
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/types/intelligence.ts`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/api/intelligence.ts`
+- 修改：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/router/index.ts`
 
-- [ ] **Step 1: Add frontend types**
+- [ ] **步骤 1：添加前端类型**
 
-Create `frontend/src/types/intelligence.ts`:
+创建 `frontend/src/types/intelligence.ts`：
 
 ```ts
 export interface ContentItem {
@@ -1185,9 +1185,9 @@ export interface AskResponse {
 }
 ```
 
-- [ ] **Step 2: Add API client**
+- [ ] **步骤 2：添加 API 客户端**
 
-Create `frontend/src/api/intelligence.ts`:
+创建 `frontend/src/api/intelligence.ts`：
 
 ```ts
 import api from '@/utils/api';
@@ -1224,9 +1224,9 @@ export function askIntelligence(q: string) {
 }
 ```
 
-- [ ] **Step 3: Add public routes**
+- [ ] **步骤 3：添加公开路由**
 
-Modify `frontend/src/router/index.ts` by adding these routes before the authenticated layout route:
+修改 `frontend/src/router/index.ts`，在认证布局路由之前添加以下路由：
 
 ```ts
   {
@@ -1262,7 +1262,7 @@ Modify `frontend/src/router/index.ts` by adding these routes before the authenti
   },
 ```
 
-Change the old root redirect from `redirect: '/login'` to a dedicated admin path:
+将旧的根路径重定向从 `redirect: '/login'` 改为专用管理路径：
 
 ```ts
 {
@@ -1271,17 +1271,17 @@ Change the old root redirect from `redirect: '/login'` to a dedicated admin path
 },
 ```
 
-- [ ] **Step 4: Run frontend type check**
+- [ ] **步骤 4：运行前端类型检查**
 
-Run from `01-python-backend/code/fastapi-fullstack-demo/frontend`:
+在 `01-python-backend/code/fastapi-fullstack-demo/frontend` 下执行：
 
 ```bash
 npm run build
 ```
 
-Expected: FAIL because the referenced Vue pages do not exist yet. This is expected before Task 7.
+预期：失败，因为引用的 Vue 页面尚不存在。这在任务 7 之前是预期的。
 
-- [ ] **Step 5: Commit**
+- [ ] **步骤 5：提交**
 
 ```bash
 git add 01-python-backend/code/fastapi-fullstack-demo/frontend/src/types/intelligence.ts \
@@ -1290,19 +1290,19 @@ git add 01-python-backend/code/fastapi-fullstack-demo/frontend/src/types/intelli
 git commit -m "feat: add intelligence frontend routes"
 ```
 
-## Task 7: Public Vue Pages
+## 任务 7：公开 Vue 页面
 
-**Files:**
-- Create: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/PublicLayout.vue`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/HomePage.vue`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/CategoryPage.vue`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/ContentDetailPage.vue`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/BriefsPage.vue`
-- Create: `01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/SearchPage.vue`
+**涉及文件：**
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/PublicLayout.vue`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/HomePage.vue`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/CategoryPage.vue`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/ContentDetailPage.vue`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/BriefsPage.vue`
+- 创建：`01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence/SearchPage.vue`
 
-- [ ] **Step 1: Create public layout**
+- [ ] **步骤 1：创建公开布局**
 
-Create `frontend/src/views/intelligence/PublicLayout.vue`:
+创建 `frontend/src/views/intelligence/PublicLayout.vue`：
 
 ```vue
 <template>
@@ -1369,9 +1369,9 @@ Create `frontend/src/views/intelligence/PublicLayout.vue`:
 </style>
 ```
 
-- [ ] **Step 2: Create home page**
+- [ ] **步骤 2：创建首页**
 
-Create `frontend/src/views/intelligence/HomePage.vue`:
+创建 `frontend/src/views/intelligence/HomePage.vue`：
 
 ```vue
 <script setup lang="ts">
@@ -1491,9 +1491,9 @@ h1 {
 </style>
 ```
 
-- [ ] **Step 3: Create category page**
+- [ ] **步骤 3：创建分类页**
 
-Create `frontend/src/views/intelligence/CategoryPage.vue`:
+创建 `frontend/src/views/intelligence/CategoryPage.vue`：
 
 ```vue
 <script setup lang="ts">
@@ -1549,9 +1549,9 @@ watch(() => route.params.category, load);
 </style>
 ```
 
-- [ ] **Step 4: Create content detail page**
+- [ ] **步骤 4：创建内容详情页**
 
-Create `frontend/src/views/intelligence/ContentDetailPage.vue`:
+创建 `frontend/src/views/intelligence/ContentDetailPage.vue`：
 
 ```vue
 <script setup lang="ts">
@@ -1609,9 +1609,9 @@ onMounted(async () => {
 </style>
 ```
 
-- [ ] **Step 5: Create briefs page**
+- [ ] **步骤 5：创建简报页**
 
-Create `frontend/src/views/intelligence/BriefsPage.vue`:
+创建 `frontend/src/views/intelligence/BriefsPage.vue`：
 
 ```vue
 <script setup lang="ts">
@@ -1653,9 +1653,9 @@ onMounted(async () => {
 </style>
 ```
 
-- [ ] **Step 6: Create search page**
+- [ ] **步骤 6：创建搜索页**
 
-Create `frontend/src/views/intelligence/SearchPage.vue`:
+创建 `frontend/src/views/intelligence/SearchPage.vue`：
 
 ```vue
 <script setup lang="ts">
@@ -1719,52 +1719,52 @@ async function runSearch() {
 </style>
 ```
 
-- [ ] **Step 7: Run frontend build**
+- [ ] **步骤 7：运行前端构建**
 
-Run:
+执行：
 
 ```bash
 npm run build
 ```
 
-Expected: PASS.
+预期：构建通过。
 
-- [ ] **Step 8: Commit**
+- [ ] **步骤 8：提交**
 
 ```bash
 git add 01-python-backend/code/fastapi-fullstack-demo/frontend/src/views/intelligence
 git commit -m "feat: add public intelligence pages"
 ```
 
-## Task 8: Documentation and End-to-End Verification
+## 任务 8：文档与端到端验证
 
-**Files:**
-- Modify: `01-python-backend/code/fastapi-fullstack-demo/README.md`
+**涉及文件：**
+- 修改：`01-python-backend/code/fastapi-fullstack-demo/README.md`
 
-- [ ] **Step 1: Add README instructions**
+- [ ] **步骤 1：添加 README 说明**
 
-Append to `01-python-backend/code/fastapi-fullstack-demo/README.md`:
+追加到 `01-python-backend/code/fastapi-fullstack-demo/README.md`：
 
 ```markdown
-## AI Agent Intelligence Site
+## AI Agent 情报站
 
-This demo includes a public AI Agent intelligence site.
+本演示项目包含一个公开的 AI Agent 情报站。
 
-Backend:
+后端启动：
 
 ```bash
 cd backend
 python -m uvicorn app.main:app --reload
 ```
 
-Seed demo content:
+生成演示内容：
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/intelligence/seed
 curl http://127.0.0.1:8000/api/intelligence/home
 ```
 
-Frontend:
+前端启动：
 
 ```bash
 cd frontend
@@ -1772,9 +1772,9 @@ npm install
 npm run dev
 ```
 
-Open `http://127.0.0.1:5173/` to view the public site.
+打开 `http://127.0.0.1:5173/` 查看公开站点。
 
-The first MVP keeps local notes private unless a Markdown file contains:
+首个 MVP 版本默认将本地笔记设为私有，除非 Markdown 文件包含：
 
 ```yaml
 ---
@@ -1783,35 +1783,35 @@ publish: true
 ```
 ```
 
-- [ ] **Step 2: Run backend tests**
+- [ ] **步骤 2：运行后端测试**
 
-Run from `backend`:
+在 `backend` 下执行：
 
 ```bash
 pytest tests/test_intelligence_classifier.py tests/test_intelligence_ingest.py tests/test_markdown_scanner.py tests/test_intelligence_api.py -v
 ```
 
-Expected: PASS.
+预期：全部通过。
 
-- [ ] **Step 3: Run frontend build**
+- [ ] **步骤 3：运行前端构建**
 
-Run from `frontend`:
+在 `frontend` 下执行：
 
 ```bash
 npm run build
 ```
 
-Expected: PASS.
+预期：构建通过。
 
-- [ ] **Step 4: Manually verify API seed flow**
+- [ ] **步骤 4：手动验证 API seed 流程**
 
-Run from `backend`:
+在 `backend` 下执行：
 
 ```bash
 python -m uvicorn app.main:app --reload
 ```
 
-In another terminal:
+在另一个终端中：
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/intelligence/seed
@@ -1820,35 +1820,35 @@ curl "http://127.0.0.1:8000/api/intelligence/search?q=RAG"
 curl "http://127.0.0.1:8000/api/intelligence/ask?q=RAG"
 ```
 
-Expected:
+预期：
 
-- Seed response includes `"created"`.
-- Home response includes `"latest_items"`, `"categories"`, and `"brief"`.
-- Search response includes at least one RAG result after seeding.
-- Ask response includes `"citations"`.
+- Seed 响应中包含 `"created"`。
+- Home 响应中包含 `"latest_items"`、`"categories"` 和 `"brief"`。
+- 生成种子数据后，搜索响应至少包含一条 RAG 结果。
+- Ask 响应中包含 `"citations"`。
 
-- [ ] **Step 5: Commit docs**
+- [ ] **步骤 5：提交文档**
 
 ```bash
 git add 01-python-backend/code/fastapi-fullstack-demo/README.md
 git commit -m "docs: document intelligence site workflow"
 ```
 
-## Self-Review
+## 自查清单
 
-Spec coverage:
+Spec 覆盖情况：
 
-- Public homepage: Task 5 API and Task 7 home page.
-- Categories: Task 1 enum, Task 5 category API, Task 7 category page.
-- Content detail: Task 1 schema, Task 5 detail API, Task 7 detail page.
-- Daily brief: Task 3 service, Task 5 brief API, Task 7 briefs page.
-- Local Markdown organization: Task 4 scanner.
-- Search and RAG with citations: Task 5 search service/API and Task 7 search page.
-- Public/private boundary: Task 4 `publish: true` handling and Task 5 public note filtering.
-- Verification: Task 8 backend tests, frontend build, and API smoke checks.
+- 公开首页：任务 5 API 和任务 7 首页。
+- 分类导航：任务 1 枚举、任务 5 分类 API、任务 7 分类页。
+- 内容详情：任务 1 Schema、任务 5 详情 API、任务 7 详情页。
+- 每日简报：任务 3 服务、任务 5 简报 API、任务 7 简报页。
+- 本地 Markdown 管理：任务 4 扫描器。
+- 搜索与带引用 RAG：任务 5 搜索服务/API 和任务 7 搜索页。
+- 公开/私有边界：任务 4 的 `publish: true` 处理和任务 5 的公开笔记过滤。
+- 验证：任务 8 后端测试、前端构建和 API 冒烟检查。
 
-Implementation choices:
+实施决策：
 
-- Vite is used for the first public site because the repository already contains a Vite Vue app. Nuxt remains a later migration if SEO becomes the priority.
-- SQLite-compatible JSON fields keep the MVP local-friendly. PostgreSQL and pgvector can be introduced after the core loop works.
-- The first classifier is deterministic so tests are stable and no network key is required. A real LLM classifier can replace the service behind the same `ClassifiedContent` contract.
+- 首个公开站点使用 Vite，因为仓库中已包含 Vite Vue 应用。如果 SEO 成为优先级，Nuxt 可作为后续迁移方向。
+- SQLite 兼容的 JSON 字段使 MVP 保持在本地友好的状态。PostgreSQL 和 pgvector 可以在核心流程跑通后引入。
+- 首个分类器采用确定性实现，确保测试稳定且无需网络密钥。真正的 LLM 分类器可以在相同的 `ClassifiedContent` 契约背后替换服务实现。
