@@ -5,7 +5,34 @@ import { useAuthStore } from '@/stores/auth';
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    redirect: '/login'
+    component: () => import('@/views/intelligence/PublicLayout.vue'),
+    children: [
+      {
+        path: '',
+        name: 'IntelligenceHome',
+        component: () => import('@/views/intelligence/HomePage.vue')
+      },
+      {
+        path: 'categories/:category',
+        name: 'IntelligenceCategory',
+        component: () => import('@/views/intelligence/CategoryPage.vue')
+      },
+      {
+        path: 'contents/:id',
+        name: 'IntelligenceContentDetail',
+        component: () => import('@/views/intelligence/ContentDetailPage.vue')
+      },
+      {
+        path: 'briefs',
+        name: 'IntelligenceBriefs',
+        component: () => import('@/views/intelligence/BriefsPage.vue')
+      },
+      {
+        path: 'search',
+        name: 'IntelligenceSearch',
+        component: () => import('@/views/intelligence/SearchPage.vue')
+      }
+    ]
   },
   {
     path: '/login',
@@ -18,8 +45,9 @@ const routes: RouteRecordRaw[] = [
     component: () => import('@/views/auth/register.vue')
   },
   {
-    path: '/',
+    path: '/admin',
     component: () => import('@/layout/index.vue'),
+    redirect: '/admin/home',
     meta: { requiresAuth: true },
     children: [
       {

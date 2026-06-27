@@ -149,7 +149,7 @@ async function handleLogin() {
         });
         // 延迟跳转，让用户看到成功提示
         setTimeout(() => {
-          router.push('/home');
+          router.push('/admin/home');
         }, 500);
       } catch (error: any) {
         const errorMsg = error.message || error || '登录失败';

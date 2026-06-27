@@ -5,23 +5,23 @@
             class="app-sidebar__menu"
             @select="handleMenuSelect"
         >
-            <el-menu-item index="/home">
+            <el-menu-item index="/admin/home">
                 <el-icon><House /></el-icon>
                 <span>首页</span>
             </el-menu-item>
-            <el-menu-item index="/users">
+            <el-menu-item index="/admin/users">
                 <el-icon><User /></el-icon>
                 <span>用户管理</span>
             </el-menu-item>
-            <el-menu-item index="/items">
+            <el-menu-item index="/admin/items">
                 <el-icon><Goods /></el-icon>
                 <span>项目管理</span>
             </el-menu-item>
-            <el-menu-item index="/posts">
+            <el-menu-item index="/admin/posts">
                 <el-icon><Document /></el-icon>
                 <span>博客文章</span>
             </el-menu-item>
-            <el-menu-item index="/tags">
+            <el-menu-item index="/admin/tags">
                 <el-icon><CollectionTag /></el-icon>
                 <span>标签管理</span>
             </el-menu-item>

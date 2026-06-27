@@ -6,7 +6,7 @@
 """
 
 from fastapi import FastAPI
-from app.routers import users, items, auth, posts
+from app.routers import users, items, auth, posts, intelligence
 
 
 def setup_routers(app: FastAPI):
@@ -62,3 +62,7 @@ def setup_routers(app: FastAPI):
     # 博客文章路由
     # /api/posts
     app.include_router(posts.router, prefix="/api")
+
+    # AI Agent 情报站公开路由
+    # /api/intelligence
+    app.include_router(intelligence.router, prefix="/api")

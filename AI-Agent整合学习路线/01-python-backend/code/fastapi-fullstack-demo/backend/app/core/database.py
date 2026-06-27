@@ -13,6 +13,7 @@ from app.models.user import User
 from app.models.item import Item
 from app.models.post import Post
 from app.models.tag import Tag, PostTagLink
+from app.models.intelligence import ContentItem, DailyBrief, IntelligenceChunk, LocalNote
 
 # 打印数据库连接信息
 print(f"Creating engine with DATABASE_URL: {settings.DATABASE_URL}")
